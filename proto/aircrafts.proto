@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package targets;
+
+option go_package = "./pb/aircraft";
+
+enum Category{
+    CATEGORY_UNKNOWN = 0;
+    CATEGORY_FRIENDLY = 1;
+    CATEGORY_HOSTILE = 2;
+}
+
+message Position{
+        double lat = 1;
+        double lng = 2;
+        double alt = 3;
+}
+
+message AircraftUpdate{
+    int32 id = 1;
+    Position position = 2;
+    Category category = 3;
+    int64 timestamp = 4;
+}
+
+message GetHistoryRequest{
+    int32 id = 1;
+
+}
+
+
+message GetHistoryResponse{
+    repeated Position positions = 1;
+}
+
+// Luong stream
+
+// ban tin NATS ban broadcast cho cac clients
+message AircraftFrame{
+    repeated AircraftUpdate data = 1;
+    int64 frame_timestamp = 2;
+}
+
+message GetAircraftRequest{
+    int32 id = 1;
+}
+
+message GetAircraftResponse{
+    AircraftUpdate data = 1;
+}
+
+
+
+
+
+

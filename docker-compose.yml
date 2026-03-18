@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: aircraft_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: aircraft_tracking
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - aircraft_net
+
+  nats:
+    image: nats:alpine
+    container_name: aircraft_nats
+    restart: always
+    ports:
+      - "4222:4222" 
+      - "8222:8222" # monitoring port
+    command: "-m 8222" 
+    networks:
+      - aircraft_net
+
+
+volumes:
+  pgdata:
+    driver: local
+
+
+networks:
+  aircraft_net:
+    driver: bridge
