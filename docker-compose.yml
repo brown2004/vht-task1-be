@@ -8,7 +8,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: aircraft_tracking
       TZ: Asia/Ho_Chi_Minh
     ports:
@@ -23,9 +23,18 @@ services:
     container_name: aircraft_nats
     restart: always
     ports:
-      - "4222:4222" 
+      - "4223:4222" 
       - "8222:8222" # monitoring port
     command: "-m 8222" 
+    networks:
+      - aircraft_net
+
+  nui:
+    image: ghcr.io/nats-nui/nui:latest
+    container_name: nats_ui
+    restart: always
+    ports:
+      - "31311:31311"
     networks:
       - aircraft_net
 
