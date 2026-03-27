@@ -1,66 +1,59 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/nats-io/nats.go"
-	"google.golang.org/protobuf/proto"
+	nats "backend/internal/delivery"
 
-	pb "backend/pb/aircraft"
-)
+	"backend/internal/repo/postgres"
+	"backend/internal/usecase"
 
-const (
-	// Dùng port 4223 nếu code đang chạy ngoài Docker kết nối vào Docker
-	NATS_URL = "nats://127.0.0.1:4223"
-	SUBJECT  = "flight.data"
+	_ "github.com/lib/pq" // Driver PostgreSQL (phải có dấu _ để chạy ngầm)
+	natsio "github.com/nats-io/nats.go"
 )
 
 func main() {
-	// 1. Kết nối tới NATS Server
-	nc, err := nats.Connect(NATS_URL)
+	dsn := "postgres://admin:secretpassword@localhost:5432/aircraft_tracking?sslmode=disable"
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("Không thể kết nối tới NATS: %v", err)
+		log.Fatalf("Failed to open DB: %v", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping DB: %v", err)
+	}
+	log.Println("Successfully connected to PostgreSQL database!")
+
+	nc, err := natsio.Connect("nats://localhost:4223")
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS Server: %v", err)
 	}
 	defer nc.Close()
-	fmt.Println("🚀 [Backend Consumer] Đã kết nối NATS thành công! Đang chờ dữ liệu...")
+	log.Println("Successfully connected to NATS Server!")
 
-	// 2. Lắng nghe dữ liệu (Subscribe) trên topic "flight.data"
-	_, err = nc.Subscribe(SUBJECT, func(msg *nats.Msg) {
-		// Khởi tạo đối tượng AircraftFrame để hứng dữ liệu
-		var frame pb.AircraftFrame
+	repo := postgres.NewAircraftRepository(db)
 
-		// Giải mã (Unmarshal) mảng byte nhị phân thành Protobuf struct
-		if err := proto.Unmarshal(msg.Data, &frame); err != nil {
-			log.Printf("Lỗi giải mã Protobuf: %v\n", err)
-			return
-		}
+	ucase := usecase.NewAircraftUseCase(repo)
 
-		// Duyệt qua mảng Data (gồm các AircraftUpdate) và in ra màn hình
-		for _, update := range frame.Data {
-			// update.Category.String() sẽ tự map enum số thành chữ (VD: CATEGORY_FRIENDLY)
-			fmt.Printf("[NATS RCV] ID: %d | Phe: %s | Tọa độ: (%.4f, %.4f) | Alt: %.0f\n",
-				update.Id,
-				update.Category.String(),
-				update.Position.Lat,
-				update.Position.Lng,
-				update.Position.Alt,
-			)
-		}
-	})
+	handler := nats.NewNatsHandler(ucase)
 
+	subject := "flight.data" // subject NATs
+
+	_, err = nc.Subscribe(subject, handler.HandleAircraftMessage)
 	if err != nil {
-		log.Fatalf("Lỗi khi Subscribe NATS: %v", err)
+		log.Fatalf("Failed to subscribe to NATS topic [%s]: %v", subject, err)
 	}
+	log.Printf("Listening on subject [%s]...", subject)
 
-	// 3. Giữ chương trình chạy ngầm để liên tục lắng nghe
-	// Dùng channel để bắt tín hiệu tắt an toàn từ bàn phím (Ctrl+C)
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	fmt.Println("\n🛑 Đã ngắt kết nối NATS. Chương trình Consumer kết thúc.")
+	<-quit
+
+	log.Println("Failed to subscribe to NATS topic [%s]: %v", subject, err)
 }
