@@ -23,5 +23,9 @@ type AircraftRepository interface {
 
 type AircraftUsecase interface {
 	// ProcessAircraftFrame(ctx context.Context, aircrafts []Aircraft) error
-	ProcessAircraftUpdate(ctx context.Context, aircraft Aircraft) error
+	ProcessAircraftUpdate(ctx context.Context, aircraft Aircraft)
+}
+
+type NatsPublisher interface {
+	PublishLiveFrame(data []byte) error
 }

@@ -42,10 +42,21 @@ func (h *natsHandler) HandleAircraftMessage(msg *nats.Msg) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	err = h.aircraftUsecase.ProcessAircraftUpdate(ctx, aircraft)
-	if err != nil {
-		log.Printf("Failed to process aircraft update for ID %d at file nats_handler.go: %v", aircraft.Id, err)
-		return
-	}
+	h.aircraftUsecase.ProcessAircraftUpdate(ctx, aircraft)
 
+}
+
+type natsPublisher struct {
+	nc *nats.Conn
+}
+
+func NewNatsPublisher(nc *nats.Conn) *natsPublisher {
+	return &natsPublisher{
+		nc: nc,
+	}
+}
+
+func (p *natsPublisher) PublishLiveFrame(data []byte) error {
+
+	return p.nc.Publish("flight.live", data)
 }

@@ -5,23 +5,32 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	pb "backend/pb/aircraft"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // dya la buoc tiem phu thuoc
 type aircraftUseCase struct {
-	repo       domain.AircraftRepository
-	updateChan chan domain.Aircraft
+	repo      domain.AircraftRepository
+	publisher domain.NatsPublisher
+	dbChan    chan domain.Aircraft
+	natsChan  chan domain.Aircraft
 }
 
 // ham khoi tao
-func NewAircraftUseCase(repo domain.AircraftRepository) domain.AircraftUsecase {
+func NewAircraftUseCase(repo domain.AircraftRepository, publisher domain.NatsPublisher) domain.AircraftUsecase {
 
 	aircraftUc := &aircraftUseCase{
-		repo:       repo,
-		updateChan: make(chan domain.Aircraft, 5000),
+		repo:      repo,
+		publisher: publisher,
+		dbChan:    make(chan domain.Aircraft, 5000),
+		natsChan:  make(chan domain.Aircraft, 5000),
 	}
 
 	go aircraftUc.startBatchWorker()
+	go aircraftUc.sendFrameToNATS()
 
 	return aircraftUc
 
@@ -41,26 +50,35 @@ func NewAircraftUseCase(repo domain.AircraftRepository) domain.AircraftUsecase {
 // }
 
 // ham xu ly tung may bay
-func (u *aircraftUseCase) ProcessAircraftUpdate(ctx context.Context, aircraft domain.Aircraft) error {
+// ham xu ly tung may bay
+func (u *aircraftUseCase) ProcessAircraftUpdate(ctx context.Context, aircraft domain.Aircraft) {
+	//dtb
 	select {
-	case u.updateChan <- aircraft:
-		return nil
+	case u.dbChan <- aircraft:
 	default:
-		return fmt.Errorf("update channel is full, dropping update for aircraft ID %d", aircraft.Id)
 
+		fmt.Printf("DB channel is full, dropping update for aircraft ID %d\n", aircraft.Id)
 	}
+
+	//nats
+	select {
+	case u.natsChan <- aircraft:
+	default:
+		fmt.Printf("NATS channel is full, dropping update for aircraft ID %d\n", aircraft.Id)
+	}
+
 }
 
 // goroutine chay nen de luu du lieu theo batch
 func (u *aircraftUseCase) startBatchWorker() {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(3000 * time.Millisecond)
 	defer ticker.Stop()
 
 	var batch []domain.Aircraft
 
 	for {
 		select {
-		case ac := <-u.updateChan:
+		case ac := <-u.dbChan:
 			batch = append(batch, ac)
 
 			if len(batch) >= 1000 {
@@ -86,5 +104,52 @@ func (u *aircraftUseCase) flushToDB(batch []domain.Aircraft) {
 		fmt.Printf("Failed to save aircraft frame: %v\n", err)
 	} else {
 		fmt.Printf("Successfully saved batch of %d aircrafts\n", len(batch))
+	}
+}
+
+func (u *aircraftUseCase) sendFrameToNATS() {
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	var currentFrame []domain.Aircraft
+
+	for {
+		select {
+		case ac := <-u.natsChan:
+			currentFrame = append(currentFrame, ac)
+
+		case <-ticker.C:
+			frameMsg := &pb.AircraftFrame{
+				FrameTimestamp: time.Now().UnixMilli(),
+				Data:           make([]*pb.AircraftUpdate, 0, len(currentFrame)),
+			}
+
+			for _, ac := range currentFrame {
+				frameMsg.Data = append(frameMsg.Data, &pb.AircraftUpdate{
+					Id:       int32(ac.Id),
+					Category: pb.Category(ac.Category),
+					Position: &pb.Position{
+						Lat: ac.Lat,
+						Lng: ac.Lng,
+						Alt: ac.Alt,
+					},
+					Timestamp: ac.Timestamp,
+				})
+			}
+
+			// DOng goi vao protobuf
+			data, err := proto.Marshal(frameMsg)
+			if err != nil {
+				fmt.Printf("Failed to marshal NATS frame: %v\n", err)
+			} else {
+				err = u.publisher.PublishLiveFrame(data) // goi ham publish cua nats publisher
+				if err != nil {
+					fmt.Printf("Failed to publish live frame: %v\n", err)
+				}
+			}
+
+			// don dep
+			currentFrame = nil
+		}
 	}
 }

@@ -12,7 +12,7 @@ import (
 	"backend/internal/repo/postgres"
 	"backend/internal/usecase"
 
-	_ "github.com/lib/pq" // Driver PostgreSQL (phải có dấu _ để chạy ngầm)
+	_ "github.com/lib/pq" // Driver PostgreSQL
 	natsio "github.com/nats-io/nats.go"
 )
 
@@ -38,7 +38,9 @@ func main() {
 
 	repo := postgres.NewAircraftRepository(db)
 
-	ucase := usecase.NewAircraftUseCase(repo)
+	pub := nats.NewNatsPublisher(nc)
+
+	ucase := usecase.NewAircraftUseCase(repo, pub)
 
 	handler := nats.NewNatsHandler(ucase)
 
@@ -55,5 +57,5 @@ func main() {
 
 	<-quit
 
-	log.Println("Failed to subscribe to NATS topic [%s]: %v", subject, err)
+	log.Printf("Failed to subscribe to NATS topic [%s]: %v", subject, err)
 }
