@@ -5,6 +5,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/lib/pq"
 )
 
 type aircraftRepository struct {
@@ -61,4 +63,67 @@ func (r *aircraftRepository) SaveAircraftFrame(ctx context.Context, aircrafts []
 		}
 	}
 	return tx.Commit()
+}
+
+func (r *aircraftRepository) GetAircraft(ctx context.Context, id int) (domain.Aircraft, error) {
+	var ac domain.Aircraft
+	query := `
+		select id, last_lat, last_lng, last_alt, category, last_timestamp
+		from aircraft
+		where id = $1
+	`
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&ac.Id, &ac.Lat, &ac.Lng, &ac.Alt, &ac.Category, &ac.Timestamp)
+	if err != nil {
+		return domain.Aircraft{}, fmt.Errorf("failed to get aircraft: %w", err)
+	}
+
+	return ac, nil
+}
+
+func (r *aircraftRepository) DeleteAircrafts(ctx context.Context, ids []int32) error {
+	query := `delete from aircraft where id = any($1)`
+	res, err := r.db.ExecContext(ctx, query, pq.Array(ids))
+	if err != nil {
+		return fmt.Errorf("failed to delete aircraft: %w", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("deleted %d/%d aircraft", 0, len(ids))
+	}
+	return nil
+}
+
+func (r *aircraftRepository) GetHistoryPositions(ctx context.Context, aircraftId int) ([]domain.Aircraft, error) {
+	query := `
+		select lat, lng, alt, timestamp
+		from history_position
+		where aircraft_id = $1
+		order by timestamp desc
+	`
+	rows, err := r.db.QueryContext(ctx, query, aircraftId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get history positions: %w", err)
+	}
+	defer rows.Close()
+
+	var history []domain.Aircraft
+	for rows.Next() {
+		var ac domain.Aircraft
+		err := rows.Scan(&ac.Lat, &ac.Lng, &ac.Alt, &ac.Timestamp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan history position: %w", err)
+		}
+		ac.Id = aircraftId
+		history = append(history, ac)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating history positions: %w", err)
+	}
+
+	return history, nil
+
 }

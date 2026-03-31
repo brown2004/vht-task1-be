@@ -19,11 +19,17 @@ type Aircraft struct {
 
 type AircraftRepository interface {
 	SaveAircraftFrame(ctx context.Context, aircrafts []Aircraft) error
+	GetAircraft(ctx context.Context, id int) (Aircraft, error)
+	DeleteAircrafts(ctx context.Context, ids []int32) error
+	GetHistoryPositions(ctx context.Context, aircraftId int) ([]Aircraft, error)
 }
 
 type AircraftUsecase interface {
 	// ProcessAircraftFrame(ctx context.Context, aircrafts []Aircraft) error
 	ProcessAircraftUpdate(ctx context.Context, aircraft Aircraft)
+	GetAircraft(ctx context.Context, id int) (Aircraft, error)
+	DeleteAircrafts(ctx context.Context, ids []int32) error
+	GetHistoryPositions(ctx context.Context, aircraftId int) ([]Aircraft, error)
 }
 
 type NatsPublisher interface {

@@ -153,3 +153,21 @@ func (u *aircraftUseCase) sendFrameToNATS() {
 		}
 	}
 }
+
+func (u *aircraftUseCase) GetAircraft(ctx context.Context, id int) (domain.Aircraft, error) {
+	return u.repo.GetAircraft(ctx, id)
+}
+
+func (u *aircraftUseCase) DeleteAircrafts(ctx context.Context, ids []int32) error {
+	for _, id := range ids {
+		err := u.repo.DeleteAircrafts(ctx, ids)
+		if err != nil {
+			fmt.Printf("Failed to delete aircraft with ID %d: %v\n", id, err)
+		}
+	}
+	return nil
+}
+
+func (u *aircraftUseCase) GetHistoryPositions(ctx context.Context, aircraftId int) ([]domain.Aircraft, error) {
+	return u.repo.GetHistoryPositions(ctx, aircraftId)
+}

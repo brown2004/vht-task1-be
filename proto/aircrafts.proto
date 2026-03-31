@@ -49,7 +49,19 @@ message GetAircraftResponse{
     AircraftUpdate data = 1;
 }
 
+message DeleteAircraftsRequest{
+    repeated int32 ids = 1;
+}
 
+message DeleteAircraftsResponse{
+    bool deleted = 1;
+}
+
+service AircraftServices{
+    rpc GetAircraft(GetAircraftRequest) returns (GetAircraftResponse);
+    rpc GetHistory(GetHistoryRequest)   returns (GetHistoryResponse);
+    rpc DeleteAircrafts(DeleteAircraftsRequest)  returns (DeleteAircraftsResponse);
+}
 
 
 
