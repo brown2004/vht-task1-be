@@ -102,7 +102,7 @@ func (r *aircraftRepository) GetHistoryPositions(ctx context.Context, aircraftId
 		select lat, lng, alt, timestamp
 		from history_position
 		where aircraft_id = $1
-		order by timestamp desc
+		order by timestamp asc
 	`
 	rows, err := r.db.QueryContext(ctx, query, aircraftId)
 	if err != nil {
