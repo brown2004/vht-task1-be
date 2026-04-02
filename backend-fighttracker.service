@@ -1,0 +1,20 @@
+[Unit]
+Description=Flight Tracker Backend Service
+After=network.target postgresql.Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+ExecStart=/usr/bin/flightsim-be
+
+Environment="DB_HOST=127.0.0.1"
+Environment="DB_PORT=5432"
+Environment="DB_USER=admin"
+Environment="DB_PASS=secretpassword"
+Environment="DB_NAME=aircraft_tracking"
+
+Environment="NATS_URL=nats://127.0.0.1:4223"
+
+[Install]
+WantedBy=multi-user.target
