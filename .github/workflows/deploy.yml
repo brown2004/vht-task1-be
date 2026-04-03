@@ -1,0 +1,52 @@
+name: Deploy Backend Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      
+      - name: build backend
+        run: go build -o flightsim-be ./cmd/main.go
+
+      - name: package to Debian
+        run: 
+          sudo apt-get update
+          sudo apt-get install -y nfpm
+          nfpm package --packager deb --target flightsim-be.deb
+        
+      - name: Copy .deb to VPS
+        uses: appleboy/scp-action@master
+        with: 
+          host: ${{ secrets.VPS_IP }}
+          username: root
+          key: $ {{ secrets.VPS_SSH_KEY }}
+          source: "flightsm-be.deb"
+          terget: "/tmp/"
+
+      - name: Install and restart service on VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: root
+          key: ${{ secrets.VPS_KEY }}
+          script: 
+            dpkg -i /tmp/flightsim-be.deb
+            systemctl deamon-reload
+            systemctl enable flightsim-be
+            systemctl restart flightsim-be
+
+
+

@@ -9,6 +9,6 @@ contents:
   - src: ./flightsim-be
     dst: /usr/bin/flightsim-be
 
-
-
+  - src: ./flightsim-be.service
+    dst: /etc/systemd/system/flightsim-be.service
 
