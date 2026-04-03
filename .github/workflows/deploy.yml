@@ -16,7 +16,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.22.2'
       
       - name: build backend
         run: go build -o flightsim-be ./cmd/main.go
