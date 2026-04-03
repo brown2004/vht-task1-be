@@ -21,10 +21,9 @@ jobs:
       - name: build backend
         run: go build -o flightsim-be ./cmd/main.go
 
-      - name: package to Debian
-        run: 
-          sudo apt-get update
-          sudo apt-get install -y nfpm
+      - name: Package to Debian (.deb)
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
           nfpm package --packager deb --target flightsim-be.deb
         
       - name: Copy .deb to VPS
