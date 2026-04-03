@@ -2,7 +2,7 @@ name: "flightsim-be"
 arch: "amd64"
 platform: "linux"
 version: "1.0.0"
-description: "Backend for flight simulation tracking system"
+
 maintainer: "hahuyduong"
 description: "Backend service for tracking flight simulation data."
 contents:
