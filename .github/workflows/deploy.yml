@@ -7,16 +7,12 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted # Chạy ngay tại nhà bác
+    runs-on: self-hosted 
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22.2'
       
       - name: build backend
         run: go build -o flightsim-be ./cmd/main.go
