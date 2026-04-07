@@ -4,6 +4,7 @@ import (
 	"backend/domain"
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	pb "backend/pb/aircraft"
@@ -17,6 +18,8 @@ type aircraftUseCase struct {
 	publisher domain.NatsPublisher
 	dbChan    chan domain.Aircraft
 	natsChan  chan domain.Aircraft
+	lastSeen  map[int]time.Time
+	mt        sync.Mutex
 }
 
 // ham khoi tao
@@ -27,10 +30,12 @@ func NewAircraftUseCase(repo domain.AircraftRepository, publisher domain.NatsPub
 		publisher: publisher,
 		dbChan:    make(chan domain.Aircraft, 5000),
 		natsChan:  make(chan domain.Aircraft, 5000),
+		lastSeen:  make(map[int]time.Time),
 	}
 
 	go aircraftUc.startBatchWorker()
 	go aircraftUc.sendFrameToNATS()
+	go aircraftUc.startTimeoutWorker()
 
 	return aircraftUc
 
@@ -52,6 +57,10 @@ func NewAircraftUseCase(repo domain.AircraftRepository, publisher domain.NatsPub
 // ham xu ly tung may bay
 // ham xu ly tung may bay
 func (u *aircraftUseCase) ProcessAircraftUpdate(ctx context.Context, aircraft domain.Aircraft) {
+	u.mt.Lock()
+	u.lastSeen[aircraft.Id] = time.Now()
+	u.mt.Unlock()
+
 	//dtb
 	select {
 	case u.dbChan <- aircraft:
@@ -159,15 +168,43 @@ func (u *aircraftUseCase) GetAircraft(ctx context.Context, id int) (domain.Aircr
 }
 
 func (u *aircraftUseCase) DeleteAircrafts(ctx context.Context, ids []int32) error {
-	for _, id := range ids {
-		err := u.repo.DeleteAircrafts(ctx, ids)
-		if err != nil {
-			fmt.Printf("Failed to delete aircraft with ID %d: %v\n", id, err)
-		}
+
+	err := u.repo.DeleteAircrafts(ctx, ids)
+	if err != nil {
+		fmt.Printf("Failed to delete aircraft with IDs %v: %v\n", ids, err)
 	}
+
 	return nil
 }
 
 func (u *aircraftUseCase) GetHistoryPositions(ctx context.Context, aircraftId int) ([]domain.Aircraft, error) {
 	return u.repo.GetHistoryPositions(ctx, aircraftId)
+}
+
+func (u *aircraftUseCase) startTimeoutWorker() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		u.mt.Lock()
+		now := time.Now()
+		var idsToDelete []int32
+		for id, last := range u.lastSeen {
+			if now.Sub(last) > 5*time.Second {
+				idsToDelete = append(idsToDelete, int32(id))
+				delete(u.lastSeen, id)
+			}
+		}
+		u.mt.Unlock()
+
+		if len(idsToDelete) > 0 {
+			fmt.Printf("Target Lost: Xoa %v do qua 5s khong cap nhat\n", idsToDelete)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			err := u.DeleteAircrafts(ctx, idsToDelete)
+			if err != nil {
+				fmt.Printf("Failed to delete timed out aircrafts with IDs %v: %v\n", idsToDelete, err)
+			}
+			cancel()
+		}
+	}
 }
