@@ -14,6 +14,8 @@ message Position{
         double lat = 1;
         double lng = 2;
         double alt = 3;
+        double speed = 4;
+        double heading = 5;
 }
 
 message AircraftIdentity {
@@ -27,12 +29,11 @@ message AircraftUpdate {
 
     int64 timestamp = 3;
     Position position = 4;
-    double speed = 5;
-    double heading = 6;
+    
 
-    Category category = 7;
-    string mode_3a = 8;
-    string classification = 9;
+    Category category = 5;
+    string mode_3a = 6;
+    string classification = 7;
 }
 message GetHistoryRequest{
     AircraftIdentity aircraft = 1;
@@ -69,12 +70,12 @@ message GetArchivedHistoryResponse{
 
 }
 
-UpdateIsPermanentAircraftsRequest{
+message UpdateIsPermanentAircraftsRequest{
 
 }
 
-UpdateIsPermanentAircraftsResponse {
-    
+message UpdateIsPermanentAircraftsResponse {
+
 }
 
 
@@ -100,5 +101,5 @@ service AircraftServices{
 }
 
 
-
+// to-do : sua lai be, fe de cac tinh nang cu chay duoc (vi them cac truong cua database)
 
