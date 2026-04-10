@@ -16,15 +16,26 @@ message Position{
         double alt = 3;
 }
 
-message AircraftUpdate{
-    int32 id = 1;
-    Position position = 2;
-    Category category = 3;
-    int64 timestamp = 4;
+message AircraftIdentity {
+    string callsign = 1;     
+    int64 detection_time = 2; 
 }
 
+message AircraftUpdate {
+    string callsign = 1;
+    int64 detection_time = 2;
+
+    int64 timestamp = 3;
+    Position position = 4;
+    double speed = 5;
+    double heading = 6;
+
+    Category category = 7;
+    string mode_3a = 8;
+    string classification = 9;
+}
 message GetHistoryRequest{
-    int32 id = 1;
+    AircraftIdentity aircraft = 1;
 
 }
 
@@ -42,15 +53,33 @@ message AircraftFrame{
 }
 
 message GetAircraftRequest{
-    int32 id = 1;
+    AircraftIdentity aircraft = 1;
 }
 
 message GetAircraftResponse{
     AircraftUpdate data = 1;
 }
 
+
+message GetArchivedHistoryRequest {
+    int64 start_time = 1; 
+    int64 end_time = 2;
+}
+message GetArchivedHistoryResponse{
+
+}
+
+UpdateIsPermanentAircraftsRequest{
+
+}
+
+UpdateIsPermanentAircraftsResponse {
+    
+}
+
+
 message DeleteAircraftsRequest{
-    repeated int32 ids = 1;
+    repeated AircraftIdentity aircrafts = 1;
 }
 
 message DeleteAircraftsResponse{
@@ -58,9 +87,16 @@ message DeleteAircraftsResponse{
 }
 
 service AircraftServices{
-    rpc GetAircraft(GetAircraftRequest) returns (GetAircraftResponse);
-    rpc GetHistory(GetHistoryRequest)   returns (GetHistoryResponse);
-    rpc DeleteAircrafts(DeleteAircraftsRequest)  returns (DeleteAircraftsResponse);
+    rpc GetAircraft(GetAircraftRequest) returns (GetAircraftResponse); //  lay thong tin 1 may bay
+    rpc GetHistory(GetHistoryRequest)   returns (GetHistoryResponse); // lay lich su quy dao 1 may bay
+
+    // get all information from all targets trong 1 khoang thoi gian de phat lai dong
+    rpc GetArchivedHistory(GetArchivedHistoryRequest)   returns (GetArchivedHistoryResponse);
+
+    rpc UpdateIsPermanentAircrafts(UpdateIsPermanentAircraftsRequest) returns (UpdateIsPermanentAircraftsResponse);
+
+    rpc DeleteAircrafts(DeleteAircraftsRequest)  returns (DeleteAircraftsResponse); // xoa cold data (clients call this function)
+    
 }
 
 
