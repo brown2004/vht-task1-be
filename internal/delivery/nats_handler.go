@@ -3,7 +3,6 @@ package nats
 import (
 	"backend/domain"
 	"context"
-	"log"
 	"time"
 
 	pb "backend/pb/aircraft"
@@ -27,17 +26,22 @@ func (h *natsHandler) HandleAircraftMessage(msg *nats.Msg) {
 
 	err := proto.Unmarshal(msg.Data, &aircraftUpdate)
 	if err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
 		return
 	}
 
+	// chuyen tu dinh dang protobuf sang domain model
 	aircraft := domain.Aircraft{
-		Id:        int(aircraftUpdate.Id),
-		Lat:       aircraftUpdate.Position.Lat,
-		Lng:       aircraftUpdate.Position.Lng,
-		Alt:       aircraftUpdate.Position.Alt,
-		Category:  int(aircraftUpdate.Category),
-		Timestamp: aircraftUpdate.Timestamp,
+		Callsign:       aircraftUpdate.Callsign,
+		DetectionTime:  aircraftUpdate.DetectionTime,
+		Category:       int(aircraftUpdate.Category),
+		Mode3A:         aircraftUpdate.Mode_3A,
+		Classification: aircraftUpdate.Classification,
+		LastLat:        aircraftUpdate.GetPosition().GetLat(),
+		LastLng:        aircraftUpdate.GetPosition().GetLng(),
+		LastAlt:        aircraftUpdate.GetPosition().GetAlt(),
+		Speed:          aircraftUpdate.GetPosition().GetSpeed(),
+		Heading:        aircraftUpdate.GetPosition().GetHeading(),
+		LastTimestamp:  aircraftUpdate.Timestamp,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

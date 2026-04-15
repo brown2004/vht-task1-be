@@ -62,20 +62,14 @@ message GetAircraftResponse{
 }
 
 
-message GetArchivedHistoryRequest {
-    int64 start_time = 1; 
-    int64 end_time = 2;
-}
-message GetArchivedHistoryResponse{
-
-}
-
 message UpdateIsPermanentAircraftsRequest{
-
+    AircraftIdentity aircraft = 1;
+    int64 from_ts = 2; 
+    int64 to_ts = 3;
 }
 
 message UpdateIsPermanentAircraftsResponse {
-
+    bool success = 1;
 }
 
 
@@ -87,16 +81,45 @@ message DeleteAircraftsResponse{
     bool deleted = 1;
 }
 
+// tai hien dong/tinh
+
+message GlobalPlaybackRequest {
+    int64 from_ts = 1;
+    int64 to_ts = 2;
+}
+
+message PlaybackPosition {
+    int64 timestamp = 1;
+    double lat = 2;
+    double lng = 3;
+    double alt = 4;
+    double speed = 5;
+    double heading = 6;
+    bool is_permanent = 7; 
+}
+
+message FlightPlayback {
+    string callsign = 1;
+    int64 detection_time = 2;
+    repeated PlaybackPosition positions = 3; 
+}
+
+
+message GlobalPlaybackResponse {
+    repeated FlightPlayback flights = 1; 
+}
+
 service AircraftServices{
     rpc GetAircraft(GetAircraftRequest) returns (GetAircraftResponse); //  lay thong tin 1 may bay
     rpc GetHistory(GetHistoryRequest)   returns (GetHistoryResponse); // lay lich su quy dao 1 may bay
 
     // get all information from all targets trong 1 khoang thoi gian de phat lai dong
-    rpc GetArchivedHistory(GetArchivedHistoryRequest)   returns (GetArchivedHistoryResponse);
+    rpc GetGlobalPlayback(GlobalPlaybackRequest)   returns (GlobalPlaybackResponse);
 
     rpc UpdateIsPermanentAircrafts(UpdateIsPermanentAircraftsRequest) returns (UpdateIsPermanentAircraftsResponse);
 
     rpc DeleteAircrafts(DeleteAircraftsRequest)  returns (DeleteAircraftsResponse); // xoa cold data (clients call this function)
+
     
 }
 

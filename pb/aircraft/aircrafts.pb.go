@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: aircrafts.proto
+// source: proto/aircrafts.proto
 
 package aircraft
 
@@ -54,11 +54,11 @@ func (x Category) String() string {
 }
 
 func (Category) Descriptor() protoreflect.EnumDescriptor {
-	return file_aircrafts_proto_enumTypes[0].Descriptor()
+	return file_proto_aircrafts_proto_enumTypes[0].Descriptor()
 }
 
 func (Category) Type() protoreflect.EnumType {
-	return &file_aircrafts_proto_enumTypes[0]
+	return &file_proto_aircrafts_proto_enumTypes[0]
 }
 
 func (x Category) Number() protoreflect.EnumNumber {
@@ -67,7 +67,7 @@ func (x Category) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Category.Descriptor instead.
 func (Category) EnumDescriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{0}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{0}
 }
 
 type Position struct {
@@ -75,13 +75,15 @@ type Position struct {
 	Lat           float64                `protobuf:"fixed64,1,opt,name=lat,proto3" json:"lat,omitempty"`
 	Lng           float64                `protobuf:"fixed64,2,opt,name=lng,proto3" json:"lng,omitempty"`
 	Alt           float64                `protobuf:"fixed64,3,opt,name=alt,proto3" json:"alt,omitempty"`
+	Speed         float64                `protobuf:"fixed64,4,opt,name=speed,proto3" json:"speed,omitempty"`
+	Heading       float64                `protobuf:"fixed64,5,opt,name=heading,proto3" json:"heading,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Position) Reset() {
 	*x = Position{}
-	mi := &file_aircrafts_proto_msgTypes[0]
+	mi := &file_proto_aircrafts_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -93,7 +95,7 @@ func (x *Position) String() string {
 func (*Position) ProtoMessage() {}
 
 func (x *Position) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[0]
+	mi := &file_proto_aircrafts_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -106,7 +108,7 @@ func (x *Position) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Position.ProtoReflect.Descriptor instead.
 func (*Position) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{0}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Position) GetLat() float64 {
@@ -130,19 +132,88 @@ func (x *Position) GetAlt() float64 {
 	return 0
 }
 
-type AircraftUpdate struct {
+func (x *Position) GetSpeed() float64 {
+	if x != nil {
+		return x.Speed
+	}
+	return 0
+}
+
+func (x *Position) GetHeading() float64 {
+	if x != nil {
+		return x.Heading
+	}
+	return 0
+}
+
+type AircraftIdentity struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Position      *Position              `protobuf:"bytes,2,opt,name=position,proto3" json:"position,omitempty"`
-	Category      Category               `protobuf:"varint,3,opt,name=category,proto3,enum=targets.Category" json:"category,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Callsign      string                 `protobuf:"bytes,1,opt,name=callsign,proto3" json:"callsign,omitempty"`
+	DetectionTime int64                  `protobuf:"varint,2,opt,name=detection_time,json=detectionTime,proto3" json:"detection_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *AircraftIdentity) Reset() {
+	*x = AircraftIdentity{}
+	mi := &file_proto_aircrafts_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AircraftIdentity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AircraftIdentity) ProtoMessage() {}
+
+func (x *AircraftIdentity) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AircraftIdentity.ProtoReflect.Descriptor instead.
+func (*AircraftIdentity) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *AircraftIdentity) GetCallsign() string {
+	if x != nil {
+		return x.Callsign
+	}
+	return ""
+}
+
+func (x *AircraftIdentity) GetDetectionTime() int64 {
+	if x != nil {
+		return x.DetectionTime
+	}
+	return 0
+}
+
+type AircraftUpdate struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Callsign       string                 `protobuf:"bytes,1,opt,name=callsign,proto3" json:"callsign,omitempty"`
+	DetectionTime  int64                  `protobuf:"varint,2,opt,name=detection_time,json=detectionTime,proto3" json:"detection_time,omitempty"`
+	Timestamp      int64                  `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Position       *Position              `protobuf:"bytes,4,opt,name=position,proto3" json:"position,omitempty"`
+	Category       Category               `protobuf:"varint,5,opt,name=category,proto3,enum=targets.Category" json:"category,omitempty"`
+	Mode_3A        string                 `protobuf:"bytes,6,opt,name=mode_3a,json=mode3a,proto3" json:"mode_3a,omitempty"`
+	Classification string                 `protobuf:"bytes,7,opt,name=classification,proto3" json:"classification,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
 func (x *AircraftUpdate) Reset() {
 	*x = AircraftUpdate{}
-	mi := &file_aircrafts_proto_msgTypes[1]
+	mi := &file_proto_aircrafts_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -154,7 +225,7 @@ func (x *AircraftUpdate) String() string {
 func (*AircraftUpdate) ProtoMessage() {}
 
 func (x *AircraftUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[1]
+	mi := &file_proto_aircrafts_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -167,12 +238,26 @@ func (x *AircraftUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AircraftUpdate.ProtoReflect.Descriptor instead.
 func (*AircraftUpdate) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{1}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *AircraftUpdate) GetId() int32 {
+func (x *AircraftUpdate) GetCallsign() string {
 	if x != nil {
-		return x.Id
+		return x.Callsign
+	}
+	return ""
+}
+
+func (x *AircraftUpdate) GetDetectionTime() int64 {
+	if x != nil {
+		return x.DetectionTime
+	}
+	return 0
+}
+
+func (x *AircraftUpdate) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
 	}
 	return 0
 }
@@ -191,23 +276,30 @@ func (x *AircraftUpdate) GetCategory() Category {
 	return Category_CATEGORY_UNKNOWN
 }
 
-func (x *AircraftUpdate) GetTimestamp() int64 {
+func (x *AircraftUpdate) GetMode_3A() string {
 	if x != nil {
-		return x.Timestamp
+		return x.Mode_3A
 	}
-	return 0
+	return ""
+}
+
+func (x *AircraftUpdate) GetClassification() string {
+	if x != nil {
+		return x.Classification
+	}
+	return ""
 }
 
 type GetHistoryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Aircraft      *AircraftIdentity      `protobuf:"bytes,1,opt,name=aircraft,proto3" json:"aircraft,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetHistoryRequest) Reset() {
 	*x = GetHistoryRequest{}
-	mi := &file_aircrafts_proto_msgTypes[2]
+	mi := &file_proto_aircrafts_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -219,7 +311,7 @@ func (x *GetHistoryRequest) String() string {
 func (*GetHistoryRequest) ProtoMessage() {}
 
 func (x *GetHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[2]
+	mi := &file_proto_aircrafts_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -232,14 +324,14 @@ func (x *GetHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetHistoryRequest.ProtoReflect.Descriptor instead.
 func (*GetHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{2}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetHistoryRequest) GetId() int32 {
+func (x *GetHistoryRequest) GetAircraft() *AircraftIdentity {
 	if x != nil {
-		return x.Id
+		return x.Aircraft
 	}
-	return 0
+	return nil
 }
 
 type GetHistoryResponse struct {
@@ -251,7 +343,7 @@ type GetHistoryResponse struct {
 
 func (x *GetHistoryResponse) Reset() {
 	*x = GetHistoryResponse{}
-	mi := &file_aircrafts_proto_msgTypes[3]
+	mi := &file_proto_aircrafts_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -263,7 +355,7 @@ func (x *GetHistoryResponse) String() string {
 func (*GetHistoryResponse) ProtoMessage() {}
 
 func (x *GetHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[3]
+	mi := &file_proto_aircrafts_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -276,7 +368,7 @@ func (x *GetHistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetHistoryResponse.ProtoReflect.Descriptor instead.
 func (*GetHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{3}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetHistoryResponse) GetPositions() []*Position {
@@ -297,7 +389,7 @@ type AircraftFrame struct {
 
 func (x *AircraftFrame) Reset() {
 	*x = AircraftFrame{}
-	mi := &file_aircrafts_proto_msgTypes[4]
+	mi := &file_proto_aircrafts_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -309,7 +401,7 @@ func (x *AircraftFrame) String() string {
 func (*AircraftFrame) ProtoMessage() {}
 
 func (x *AircraftFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[4]
+	mi := &file_proto_aircrafts_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,7 +414,7 @@ func (x *AircraftFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AircraftFrame.ProtoReflect.Descriptor instead.
 func (*AircraftFrame) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{4}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AircraftFrame) GetData() []*AircraftUpdate {
@@ -341,14 +433,14 @@ func (x *AircraftFrame) GetFrameTimestamp() int64 {
 
 type GetAircraftRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Aircraft      *AircraftIdentity      `protobuf:"bytes,1,opt,name=aircraft,proto3" json:"aircraft,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetAircraftRequest) Reset() {
 	*x = GetAircraftRequest{}
-	mi := &file_aircrafts_proto_msgTypes[5]
+	mi := &file_proto_aircrafts_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -360,7 +452,7 @@ func (x *GetAircraftRequest) String() string {
 func (*GetAircraftRequest) ProtoMessage() {}
 
 func (x *GetAircraftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[5]
+	mi := &file_proto_aircrafts_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -373,14 +465,14 @@ func (x *GetAircraftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAircraftRequest.ProtoReflect.Descriptor instead.
 func (*GetAircraftRequest) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{5}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetAircraftRequest) GetId() int32 {
+func (x *GetAircraftRequest) GetAircraft() *AircraftIdentity {
 	if x != nil {
-		return x.Id
+		return x.Aircraft
 	}
-	return 0
+	return nil
 }
 
 type GetAircraftResponse struct {
@@ -392,7 +484,7 @@ type GetAircraftResponse struct {
 
 func (x *GetAircraftResponse) Reset() {
 	*x = GetAircraftResponse{}
-	mi := &file_aircrafts_proto_msgTypes[6]
+	mi := &file_proto_aircrafts_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +496,7 @@ func (x *GetAircraftResponse) String() string {
 func (*GetAircraftResponse) ProtoMessage() {}
 
 func (x *GetAircraftResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[6]
+	mi := &file_proto_aircrafts_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +509,7 @@ func (x *GetAircraftResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAircraftResponse.ProtoReflect.Descriptor instead.
 func (*GetAircraftResponse) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{6}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetAircraftResponse) GetData() *AircraftUpdate {
@@ -427,16 +519,120 @@ func (x *GetAircraftResponse) GetData() *AircraftUpdate {
 	return nil
 }
 
+type UpdateIsPermanentAircraftsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Aircraft      *AircraftIdentity      `protobuf:"bytes,1,opt,name=aircraft,proto3" json:"aircraft,omitempty"`
+	FromTs        int64                  `protobuf:"varint,2,opt,name=from_ts,json=fromTs,proto3" json:"from_ts,omitempty"`
+	ToTs          int64                  `protobuf:"varint,3,opt,name=to_ts,json=toTs,proto3" json:"to_ts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateIsPermanentAircraftsRequest) Reset() {
+	*x = UpdateIsPermanentAircraftsRequest{}
+	mi := &file_proto_aircrafts_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateIsPermanentAircraftsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateIsPermanentAircraftsRequest) ProtoMessage() {}
+
+func (x *UpdateIsPermanentAircraftsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateIsPermanentAircraftsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateIsPermanentAircraftsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateIsPermanentAircraftsRequest) GetAircraft() *AircraftIdentity {
+	if x != nil {
+		return x.Aircraft
+	}
+	return nil
+}
+
+func (x *UpdateIsPermanentAircraftsRequest) GetFromTs() int64 {
+	if x != nil {
+		return x.FromTs
+	}
+	return 0
+}
+
+func (x *UpdateIsPermanentAircraftsRequest) GetToTs() int64 {
+	if x != nil {
+		return x.ToTs
+	}
+	return 0
+}
+
+type UpdateIsPermanentAircraftsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateIsPermanentAircraftsResponse) Reset() {
+	*x = UpdateIsPermanentAircraftsResponse{}
+	mi := &file_proto_aircrafts_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateIsPermanentAircraftsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateIsPermanentAircraftsResponse) ProtoMessage() {}
+
+func (x *UpdateIsPermanentAircraftsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateIsPermanentAircraftsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateIsPermanentAircraftsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateIsPermanentAircraftsResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 type DeleteAircraftsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ids           []int32                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Aircrafts     []*AircraftIdentity    `protobuf:"bytes,1,rep,name=aircrafts,proto3" json:"aircrafts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteAircraftsRequest) Reset() {
 	*x = DeleteAircraftsRequest{}
-	mi := &file_aircrafts_proto_msgTypes[7]
+	mi := &file_proto_aircrafts_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -448,7 +644,7 @@ func (x *DeleteAircraftsRequest) String() string {
 func (*DeleteAircraftsRequest) ProtoMessage() {}
 
 func (x *DeleteAircraftsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[7]
+	mi := &file_proto_aircrafts_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -461,12 +657,12 @@ func (x *DeleteAircraftsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAircraftsRequest.ProtoReflect.Descriptor instead.
 func (*DeleteAircraftsRequest) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{7}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *DeleteAircraftsRequest) GetIds() []int32 {
+func (x *DeleteAircraftsRequest) GetAircrafts() []*AircraftIdentity {
 	if x != nil {
-		return x.Ids
+		return x.Aircrafts
 	}
 	return nil
 }
@@ -480,7 +676,7 @@ type DeleteAircraftsResponse struct {
 
 func (x *DeleteAircraftsResponse) Reset() {
 	*x = DeleteAircraftsResponse{}
-	mi := &file_aircrafts_proto_msgTypes[8]
+	mi := &file_proto_aircrafts_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -492,7 +688,7 @@ func (x *DeleteAircraftsResponse) String() string {
 func (*DeleteAircraftsResponse) ProtoMessage() {}
 
 func (x *DeleteAircraftsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aircrafts_proto_msgTypes[8]
+	mi := &file_proto_aircrafts_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -505,7 +701,7 @@ func (x *DeleteAircraftsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAircraftsResponse.ProtoReflect.Descriptor instead.
 func (*DeleteAircraftsResponse) Descriptor() ([]byte, []int) {
-	return file_aircrafts_proto_rawDescGZIP(), []int{8}
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DeleteAircraftsResponse) GetDeleted() bool {
@@ -515,111 +711,409 @@ func (x *DeleteAircraftsResponse) GetDeleted() bool {
 	return false
 }
 
-var File_aircrafts_proto protoreflect.FileDescriptor
+type GlobalPlaybackRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromTs        int64                  `protobuf:"varint,1,opt,name=from_ts,json=fromTs,proto3" json:"from_ts,omitempty"`
+	ToTs          int64                  `protobuf:"varint,2,opt,name=to_ts,json=toTs,proto3" json:"to_ts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_aircrafts_proto_rawDesc = "" +
+func (x *GlobalPlaybackRequest) Reset() {
+	*x = GlobalPlaybackRequest{}
+	mi := &file_proto_aircrafts_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GlobalPlaybackRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GlobalPlaybackRequest) ProtoMessage() {}
+
+func (x *GlobalPlaybackRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GlobalPlaybackRequest.ProtoReflect.Descriptor instead.
+func (*GlobalPlaybackRequest) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GlobalPlaybackRequest) GetFromTs() int64 {
+	if x != nil {
+		return x.FromTs
+	}
+	return 0
+}
+
+func (x *GlobalPlaybackRequest) GetToTs() int64 {
+	if x != nil {
+		return x.ToTs
+	}
+	return 0
+}
+
+type PlaybackPosition struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Timestamp     int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Lat           float64                `protobuf:"fixed64,2,opt,name=lat,proto3" json:"lat,omitempty"`
+	Lng           float64                `protobuf:"fixed64,3,opt,name=lng,proto3" json:"lng,omitempty"`
+	Alt           float64                `protobuf:"fixed64,4,opt,name=alt,proto3" json:"alt,omitempty"`
+	Speed         float64                `protobuf:"fixed64,5,opt,name=speed,proto3" json:"speed,omitempty"`
+	Heading       float64                `protobuf:"fixed64,6,opt,name=heading,proto3" json:"heading,omitempty"`
+	IsPermanent   bool                   `protobuf:"varint,7,opt,name=is_permanent,json=isPermanent,proto3" json:"is_permanent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlaybackPosition) Reset() {
+	*x = PlaybackPosition{}
+	mi := &file_proto_aircrafts_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlaybackPosition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlaybackPosition) ProtoMessage() {}
+
+func (x *PlaybackPosition) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlaybackPosition.ProtoReflect.Descriptor instead.
+func (*PlaybackPosition) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *PlaybackPosition) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
+func (x *PlaybackPosition) GetLat() float64 {
+	if x != nil {
+		return x.Lat
+	}
+	return 0
+}
+
+func (x *PlaybackPosition) GetLng() float64 {
+	if x != nil {
+		return x.Lng
+	}
+	return 0
+}
+
+func (x *PlaybackPosition) GetAlt() float64 {
+	if x != nil {
+		return x.Alt
+	}
+	return 0
+}
+
+func (x *PlaybackPosition) GetSpeed() float64 {
+	if x != nil {
+		return x.Speed
+	}
+	return 0
+}
+
+func (x *PlaybackPosition) GetHeading() float64 {
+	if x != nil {
+		return x.Heading
+	}
+	return 0
+}
+
+func (x *PlaybackPosition) GetIsPermanent() bool {
+	if x != nil {
+		return x.IsPermanent
+	}
+	return false
+}
+
+type FlightPlayback struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Callsign      string                 `protobuf:"bytes,1,opt,name=callsign,proto3" json:"callsign,omitempty"`
+	DetectionTime int64                  `protobuf:"varint,2,opt,name=detection_time,json=detectionTime,proto3" json:"detection_time,omitempty"`
+	Positions     []*PlaybackPosition    `protobuf:"bytes,3,rep,name=positions,proto3" json:"positions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlightPlayback) Reset() {
+	*x = FlightPlayback{}
+	mi := &file_proto_aircrafts_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlightPlayback) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlightPlayback) ProtoMessage() {}
+
+func (x *FlightPlayback) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlightPlayback.ProtoReflect.Descriptor instead.
+func (*FlightPlayback) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *FlightPlayback) GetCallsign() string {
+	if x != nil {
+		return x.Callsign
+	}
+	return ""
+}
+
+func (x *FlightPlayback) GetDetectionTime() int64 {
+	if x != nil {
+		return x.DetectionTime
+	}
+	return 0
+}
+
+func (x *FlightPlayback) GetPositions() []*PlaybackPosition {
+	if x != nil {
+		return x.Positions
+	}
+	return nil
+}
+
+type GlobalPlaybackResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Flights       []*FlightPlayback      `protobuf:"bytes,1,rep,name=flights,proto3" json:"flights,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GlobalPlaybackResponse) Reset() {
+	*x = GlobalPlaybackResponse{}
+	mi := &file_proto_aircrafts_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GlobalPlaybackResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GlobalPlaybackResponse) ProtoMessage() {}
+
+func (x *GlobalPlaybackResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_aircrafts_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GlobalPlaybackResponse.ProtoReflect.Descriptor instead.
+func (*GlobalPlaybackResponse) Descriptor() ([]byte, []int) {
+	return file_proto_aircrafts_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GlobalPlaybackResponse) GetFlights() []*FlightPlayback {
+	if x != nil {
+		return x.Flights
+	}
+	return nil
+}
+
+var File_proto_aircrafts_proto protoreflect.FileDescriptor
+
+const file_proto_aircrafts_proto_rawDesc = "" +
 	"\n" +
-	"\x0faircrafts.proto\x12\atargets\"@\n" +
+	"\x15proto/aircrafts.proto\x12\atargets\"p\n" +
 	"\bPosition\x12\x10\n" +
 	"\x03lat\x18\x01 \x01(\x01R\x03lat\x12\x10\n" +
 	"\x03lng\x18\x02 \x01(\x01R\x03lng\x12\x10\n" +
-	"\x03alt\x18\x03 \x01(\x01R\x03alt\"\x9c\x01\n" +
-	"\x0eAircraftUpdate\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\x12-\n" +
-	"\bposition\x18\x02 \x01(\v2\x11.targets.PositionR\bposition\x12-\n" +
-	"\bcategory\x18\x03 \x01(\x0e2\x11.targets.CategoryR\bcategory\x12\x1c\n" +
-	"\ttimestamp\x18\x04 \x01(\x03R\ttimestamp\"#\n" +
-	"\x11GetHistoryRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\"E\n" +
+	"\x03alt\x18\x03 \x01(\x01R\x03alt\x12\x14\n" +
+	"\x05speed\x18\x04 \x01(\x01R\x05speed\x12\x18\n" +
+	"\aheading\x18\x05 \x01(\x01R\aheading\"U\n" +
+	"\x10AircraftIdentity\x12\x1a\n" +
+	"\bcallsign\x18\x01 \x01(\tR\bcallsign\x12%\n" +
+	"\x0edetection_time\x18\x02 \x01(\x03R\rdetectionTime\"\x90\x02\n" +
+	"\x0eAircraftUpdate\x12\x1a\n" +
+	"\bcallsign\x18\x01 \x01(\tR\bcallsign\x12%\n" +
+	"\x0edetection_time\x18\x02 \x01(\x03R\rdetectionTime\x12\x1c\n" +
+	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\x12-\n" +
+	"\bposition\x18\x04 \x01(\v2\x11.targets.PositionR\bposition\x12-\n" +
+	"\bcategory\x18\x05 \x01(\x0e2\x11.targets.CategoryR\bcategory\x12\x17\n" +
+	"\amode_3a\x18\x06 \x01(\tR\x06mode3a\x12&\n" +
+	"\x0eclassification\x18\a \x01(\tR\x0eclassification\"J\n" +
+	"\x11GetHistoryRequest\x125\n" +
+	"\baircraft\x18\x01 \x01(\v2\x19.targets.AircraftIdentityR\baircraft\"E\n" +
 	"\x12GetHistoryResponse\x12/\n" +
 	"\tpositions\x18\x01 \x03(\v2\x11.targets.PositionR\tpositions\"e\n" +
 	"\rAircraftFrame\x12+\n" +
 	"\x04data\x18\x01 \x03(\v2\x17.targets.AircraftUpdateR\x04data\x12'\n" +
-	"\x0fframe_timestamp\x18\x02 \x01(\x03R\x0eframeTimestamp\"$\n" +
-	"\x12GetAircraftRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\"B\n" +
+	"\x0fframe_timestamp\x18\x02 \x01(\x03R\x0eframeTimestamp\"K\n" +
+	"\x12GetAircraftRequest\x125\n" +
+	"\baircraft\x18\x01 \x01(\v2\x19.targets.AircraftIdentityR\baircraft\"B\n" +
 	"\x13GetAircraftResponse\x12+\n" +
-	"\x04data\x18\x01 \x01(\v2\x17.targets.AircraftUpdateR\x04data\"*\n" +
-	"\x16DeleteAircraftsRequest\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\x05R\x03ids\"3\n" +
+	"\x04data\x18\x01 \x01(\v2\x17.targets.AircraftUpdateR\x04data\"\x88\x01\n" +
+	"!UpdateIsPermanentAircraftsRequest\x125\n" +
+	"\baircraft\x18\x01 \x01(\v2\x19.targets.AircraftIdentityR\baircraft\x12\x17\n" +
+	"\afrom_ts\x18\x02 \x01(\x03R\x06fromTs\x12\x13\n" +
+	"\x05to_ts\x18\x03 \x01(\x03R\x04toTs\">\n" +
+	"\"UpdateIsPermanentAircraftsResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"Q\n" +
+	"\x16DeleteAircraftsRequest\x127\n" +
+	"\taircrafts\x18\x01 \x03(\v2\x19.targets.AircraftIdentityR\taircrafts\"3\n" +
 	"\x17DeleteAircraftsResponse\x12\x18\n" +
-	"\adeleted\x18\x01 \x01(\bR\adeleted*M\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"E\n" +
+	"\x15GlobalPlaybackRequest\x12\x17\n" +
+	"\afrom_ts\x18\x01 \x01(\x03R\x06fromTs\x12\x13\n" +
+	"\x05to_ts\x18\x02 \x01(\x03R\x04toTs\"\xb9\x01\n" +
+	"\x10PlaybackPosition\x12\x1c\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12\x10\n" +
+	"\x03lat\x18\x02 \x01(\x01R\x03lat\x12\x10\n" +
+	"\x03lng\x18\x03 \x01(\x01R\x03lng\x12\x10\n" +
+	"\x03alt\x18\x04 \x01(\x01R\x03alt\x12\x14\n" +
+	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\x18\n" +
+	"\aheading\x18\x06 \x01(\x01R\aheading\x12!\n" +
+	"\fis_permanent\x18\a \x01(\bR\visPermanent\"\x8c\x01\n" +
+	"\x0eFlightPlayback\x12\x1a\n" +
+	"\bcallsign\x18\x01 \x01(\tR\bcallsign\x12%\n" +
+	"\x0edetection_time\x18\x02 \x01(\x03R\rdetectionTime\x127\n" +
+	"\tpositions\x18\x03 \x03(\v2\x19.targets.PlaybackPositionR\tpositions\"K\n" +
+	"\x16GlobalPlaybackResponse\x121\n" +
+	"\aflights\x18\x01 \x03(\v2\x17.targets.FlightPlaybackR\aflights*M\n" +
 	"\bCategory\x12\x14\n" +
 	"\x10CATEGORY_UNKNOWN\x10\x00\x12\x15\n" +
 	"\x11CATEGORY_FRIENDLY\x10\x01\x12\x14\n" +
-	"\x10CATEGORY_HOSTILE\x10\x022\xf9\x01\n" +
+	"\x10CATEGORY_HOSTILE\x10\x022\xc6\x03\n" +
 	"\x10AircraftServices\x12H\n" +
 	"\vGetAircraft\x12\x1b.targets.GetAircraftRequest\x1a\x1c.targets.GetAircraftResponse\x12E\n" +
 	"\n" +
 	"GetHistory\x12\x1a.targets.GetHistoryRequest\x1a\x1b.targets.GetHistoryResponse\x12T\n" +
+	"\x11GetGlobalPlayback\x12\x1e.targets.GlobalPlaybackRequest\x1a\x1f.targets.GlobalPlaybackResponse\x12u\n" +
+	"\x1aUpdateIsPermanentAircrafts\x12*.targets.UpdateIsPermanentAircraftsRequest\x1a+.targets.UpdateIsPermanentAircraftsResponse\x12T\n" +
 	"\x0fDeleteAircrafts\x12\x1f.targets.DeleteAircraftsRequest\x1a .targets.DeleteAircraftsResponseB\x0fZ\r./pb/aircraftb\x06proto3"
 
 var (
-	file_aircrafts_proto_rawDescOnce sync.Once
-	file_aircrafts_proto_rawDescData []byte
+	file_proto_aircrafts_proto_rawDescOnce sync.Once
+	file_proto_aircrafts_proto_rawDescData []byte
 )
 
-func file_aircrafts_proto_rawDescGZIP() []byte {
-	file_aircrafts_proto_rawDescOnce.Do(func() {
-		file_aircrafts_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_aircrafts_proto_rawDesc), len(file_aircrafts_proto_rawDesc)))
+func file_proto_aircrafts_proto_rawDescGZIP() []byte {
+	file_proto_aircrafts_proto_rawDescOnce.Do(func() {
+		file_proto_aircrafts_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_aircrafts_proto_rawDesc), len(file_proto_aircrafts_proto_rawDesc)))
 	})
-	return file_aircrafts_proto_rawDescData
+	return file_proto_aircrafts_proto_rawDescData
 }
 
-var file_aircrafts_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_aircrafts_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_aircrafts_proto_goTypes = []any{
-	(Category)(0),                   // 0: targets.Category
-	(*Position)(nil),                // 1: targets.Position
-	(*AircraftUpdate)(nil),          // 2: targets.AircraftUpdate
-	(*GetHistoryRequest)(nil),       // 3: targets.GetHistoryRequest
-	(*GetHistoryResponse)(nil),      // 4: targets.GetHistoryResponse
-	(*AircraftFrame)(nil),           // 5: targets.AircraftFrame
-	(*GetAircraftRequest)(nil),      // 6: targets.GetAircraftRequest
-	(*GetAircraftResponse)(nil),     // 7: targets.GetAircraftResponse
-	(*DeleteAircraftsRequest)(nil),  // 8: targets.DeleteAircraftsRequest
-	(*DeleteAircraftsResponse)(nil), // 9: targets.DeleteAircraftsResponse
+var file_proto_aircrafts_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_proto_aircrafts_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_proto_aircrafts_proto_goTypes = []any{
+	(Category)(0),                              // 0: targets.Category
+	(*Position)(nil),                           // 1: targets.Position
+	(*AircraftIdentity)(nil),                   // 2: targets.AircraftIdentity
+	(*AircraftUpdate)(nil),                     // 3: targets.AircraftUpdate
+	(*GetHistoryRequest)(nil),                  // 4: targets.GetHistoryRequest
+	(*GetHistoryResponse)(nil),                 // 5: targets.GetHistoryResponse
+	(*AircraftFrame)(nil),                      // 6: targets.AircraftFrame
+	(*GetAircraftRequest)(nil),                 // 7: targets.GetAircraftRequest
+	(*GetAircraftResponse)(nil),                // 8: targets.GetAircraftResponse
+	(*UpdateIsPermanentAircraftsRequest)(nil),  // 9: targets.UpdateIsPermanentAircraftsRequest
+	(*UpdateIsPermanentAircraftsResponse)(nil), // 10: targets.UpdateIsPermanentAircraftsResponse
+	(*DeleteAircraftsRequest)(nil),             // 11: targets.DeleteAircraftsRequest
+	(*DeleteAircraftsResponse)(nil),            // 12: targets.DeleteAircraftsResponse
+	(*GlobalPlaybackRequest)(nil),              // 13: targets.GlobalPlaybackRequest
+	(*PlaybackPosition)(nil),                   // 14: targets.PlaybackPosition
+	(*FlightPlayback)(nil),                     // 15: targets.FlightPlayback
+	(*GlobalPlaybackResponse)(nil),             // 16: targets.GlobalPlaybackResponse
 }
-var file_aircrafts_proto_depIdxs = []int32{
-	1, // 0: targets.AircraftUpdate.position:type_name -> targets.Position
-	0, // 1: targets.AircraftUpdate.category:type_name -> targets.Category
-	1, // 2: targets.GetHistoryResponse.positions:type_name -> targets.Position
-	2, // 3: targets.AircraftFrame.data:type_name -> targets.AircraftUpdate
-	2, // 4: targets.GetAircraftResponse.data:type_name -> targets.AircraftUpdate
-	6, // 5: targets.AircraftServices.GetAircraft:input_type -> targets.GetAircraftRequest
-	3, // 6: targets.AircraftServices.GetHistory:input_type -> targets.GetHistoryRequest
-	8, // 7: targets.AircraftServices.DeleteAircrafts:input_type -> targets.DeleteAircraftsRequest
-	7, // 8: targets.AircraftServices.GetAircraft:output_type -> targets.GetAircraftResponse
-	4, // 9: targets.AircraftServices.GetHistory:output_type -> targets.GetHistoryResponse
-	9, // 10: targets.AircraftServices.DeleteAircrafts:output_type -> targets.DeleteAircraftsResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+var file_proto_aircrafts_proto_depIdxs = []int32{
+	1,  // 0: targets.AircraftUpdate.position:type_name -> targets.Position
+	0,  // 1: targets.AircraftUpdate.category:type_name -> targets.Category
+	2,  // 2: targets.GetHistoryRequest.aircraft:type_name -> targets.AircraftIdentity
+	1,  // 3: targets.GetHistoryResponse.positions:type_name -> targets.Position
+	3,  // 4: targets.AircraftFrame.data:type_name -> targets.AircraftUpdate
+	2,  // 5: targets.GetAircraftRequest.aircraft:type_name -> targets.AircraftIdentity
+	3,  // 6: targets.GetAircraftResponse.data:type_name -> targets.AircraftUpdate
+	2,  // 7: targets.UpdateIsPermanentAircraftsRequest.aircraft:type_name -> targets.AircraftIdentity
+	2,  // 8: targets.DeleteAircraftsRequest.aircrafts:type_name -> targets.AircraftIdentity
+	14, // 9: targets.FlightPlayback.positions:type_name -> targets.PlaybackPosition
+	15, // 10: targets.GlobalPlaybackResponse.flights:type_name -> targets.FlightPlayback
+	7,  // 11: targets.AircraftServices.GetAircraft:input_type -> targets.GetAircraftRequest
+	4,  // 12: targets.AircraftServices.GetHistory:input_type -> targets.GetHistoryRequest
+	13, // 13: targets.AircraftServices.GetGlobalPlayback:input_type -> targets.GlobalPlaybackRequest
+	9,  // 14: targets.AircraftServices.UpdateIsPermanentAircrafts:input_type -> targets.UpdateIsPermanentAircraftsRequest
+	11, // 15: targets.AircraftServices.DeleteAircrafts:input_type -> targets.DeleteAircraftsRequest
+	8,  // 16: targets.AircraftServices.GetAircraft:output_type -> targets.GetAircraftResponse
+	5,  // 17: targets.AircraftServices.GetHistory:output_type -> targets.GetHistoryResponse
+	16, // 18: targets.AircraftServices.GetGlobalPlayback:output_type -> targets.GlobalPlaybackResponse
+	10, // 19: targets.AircraftServices.UpdateIsPermanentAircrafts:output_type -> targets.UpdateIsPermanentAircraftsResponse
+	12, // 20: targets.AircraftServices.DeleteAircrafts:output_type -> targets.DeleteAircraftsResponse
+	16, // [16:21] is the sub-list for method output_type
+	11, // [11:16] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
-func init() { file_aircrafts_proto_init() }
-func file_aircrafts_proto_init() {
-	if File_aircrafts_proto != nil {
+func init() { file_proto_aircrafts_proto_init() }
+func file_proto_aircrafts_proto_init() {
+	if File_proto_aircrafts_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_aircrafts_proto_rawDesc), len(file_aircrafts_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_aircrafts_proto_rawDesc), len(file_proto_aircrafts_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_aircrafts_proto_goTypes,
-		DependencyIndexes: file_aircrafts_proto_depIdxs,
-		EnumInfos:         file_aircrafts_proto_enumTypes,
-		MessageInfos:      file_aircrafts_proto_msgTypes,
+		GoTypes:           file_proto_aircrafts_proto_goTypes,
+		DependencyIndexes: file_proto_aircrafts_proto_depIdxs,
+		EnumInfos:         file_proto_aircrafts_proto_enumTypes,
+		MessageInfos:      file_proto_aircrafts_proto_msgTypes,
 	}.Build()
-	File_aircrafts_proto = out.File
-	file_aircrafts_proto_goTypes = nil
-	file_aircrafts_proto_depIdxs = nil
+	File_proto_aircrafts_proto = out.File
+	file_proto_aircrafts_proto_goTypes = nil
+	file_proto_aircrafts_proto_depIdxs = nil
 }

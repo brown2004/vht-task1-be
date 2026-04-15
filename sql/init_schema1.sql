@@ -33,6 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_history_aircraft_time
 ON history_position (aircraft_callsign, aircraft_detection_time, timestamp DESC);
 
 -- cold data
+
 CREATE TABLE IF NOT EXISTS archived_flight_summary (
     callsign VARCHAR(50) NOT NULL,
     detection_time BIGINT NOT NULL,
@@ -40,10 +41,8 @@ CREATE TABLE IF NOT EXISTS archived_flight_summary (
     classification VARCHAR(50),
     start_time BIGINT NOT NULL,
     end_time BIGINT NOT NULL, 
-	is_permanent BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (callsign, detection_time)
 );
-
 
 CREATE TABLE IF NOT EXISTS archived_position (
     aircraft_callsign VARCHAR(50) NOT NULL,
@@ -54,11 +53,20 @@ CREATE TABLE IF NOT EXISTS archived_position (
     speed DOUBLE PRECISION NOT NULL,  
     heading DOUBLE PRECISION NOT NULL,  
     timestamp BIGINT NOT NULL,
+    is_permanent BOOLEAN NOT NULL DEFAULT FALSE, 
     CONSTRAINT fk_archived_flight
         FOREIGN KEY (aircraft_callsign, aircraft_detection_time)
         REFERENCES archived_flight_summary (callsign, detection_time)
         ON DELETE CASCADE
 );
 
+
+CREATE INDEX IF NOT EXISTS idx_archived_position_cleanup 
+ON archived_position (is_permanent, timestamp);
+
 CREATE INDEX IF NOT EXISTS idx_archived_position_query 
 ON archived_position (aircraft_callsign, aircraft_detection_time, timestamp DESC);
+
+
+ALTER TABLE archived_position
+ADD PRIMARY KEY (aircraft_callsign, aircraft_detection_time, timestamp);

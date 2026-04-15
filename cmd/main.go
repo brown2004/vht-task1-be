@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	nats "backend/internal/delivery"
 	grpc_delivery "backend/internal/delivery/grpc"
@@ -27,6 +28,9 @@ func main() {
 		log.Fatalf("Failed to open DB: %v", err)
 	}
 	defer db.Close()
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(30 * time.Minute)
 
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Failed to ping DB: %v", err)
@@ -53,6 +57,9 @@ func main() {
 	_, err = nc.Subscribe(subject, handler.HandleAircraftMessage)
 	if err != nil {
 		log.Fatalf("Failed to subscribe to NATS topic [%s]: %v", subject, err)
+	}
+	if err := nc.Flush(); err != nil {
+		log.Fatalf("Failed to flush NATS subscription [%s]: %v", subject, err)
 	}
 	log.Printf("Listening on subject [%s]...", subject)
 

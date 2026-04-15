@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v3.21.12
-// source: aircrafts.proto
+// source: proto/aircrafts.proto
 
 package aircraft
 
@@ -19,9 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AircraftServices_GetAircraft_FullMethodName     = "/targets.AircraftServices/GetAircraft"
-	AircraftServices_GetHistory_FullMethodName      = "/targets.AircraftServices/GetHistory"
-	AircraftServices_DeleteAircrafts_FullMethodName = "/targets.AircraftServices/DeleteAircrafts"
+	AircraftServices_GetAircraft_FullMethodName                = "/targets.AircraftServices/GetAircraft"
+	AircraftServices_GetHistory_FullMethodName                 = "/targets.AircraftServices/GetHistory"
+	AircraftServices_GetGlobalPlayback_FullMethodName          = "/targets.AircraftServices/GetGlobalPlayback"
+	AircraftServices_UpdateIsPermanentAircrafts_FullMethodName = "/targets.AircraftServices/UpdateIsPermanentAircrafts"
+	AircraftServices_DeleteAircrafts_FullMethodName            = "/targets.AircraftServices/DeleteAircrafts"
 )
 
 // AircraftServicesClient is the client API for AircraftServices service.
@@ -30,6 +32,9 @@ const (
 type AircraftServicesClient interface {
 	GetAircraft(ctx context.Context, in *GetAircraftRequest, opts ...grpc.CallOption) (*GetAircraftResponse, error)
 	GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error)
+	// get all information from all targets trong 1 khoang thoi gian de phat lai dong
+	GetGlobalPlayback(ctx context.Context, in *GlobalPlaybackRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error)
+	UpdateIsPermanentAircrafts(ctx context.Context, in *UpdateIsPermanentAircraftsRequest, opts ...grpc.CallOption) (*UpdateIsPermanentAircraftsResponse, error)
 	DeleteAircrafts(ctx context.Context, in *DeleteAircraftsRequest, opts ...grpc.CallOption) (*DeleteAircraftsResponse, error)
 }
 
@@ -61,6 +66,26 @@ func (c *aircraftServicesClient) GetHistory(ctx context.Context, in *GetHistoryR
 	return out, nil
 }
 
+func (c *aircraftServicesClient) GetGlobalPlayback(ctx context.Context, in *GlobalPlaybackRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GlobalPlaybackResponse)
+	err := c.cc.Invoke(ctx, AircraftServices_GetGlobalPlayback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aircraftServicesClient) UpdateIsPermanentAircrafts(ctx context.Context, in *UpdateIsPermanentAircraftsRequest, opts ...grpc.CallOption) (*UpdateIsPermanentAircraftsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateIsPermanentAircraftsResponse)
+	err := c.cc.Invoke(ctx, AircraftServices_UpdateIsPermanentAircrafts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aircraftServicesClient) DeleteAircrafts(ctx context.Context, in *DeleteAircraftsRequest, opts ...grpc.CallOption) (*DeleteAircraftsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteAircraftsResponse)
@@ -77,6 +102,9 @@ func (c *aircraftServicesClient) DeleteAircrafts(ctx context.Context, in *Delete
 type AircraftServicesServer interface {
 	GetAircraft(context.Context, *GetAircraftRequest) (*GetAircraftResponse, error)
 	GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error)
+	// get all information from all targets trong 1 khoang thoi gian de phat lai dong
+	GetGlobalPlayback(context.Context, *GlobalPlaybackRequest) (*GlobalPlaybackResponse, error)
+	UpdateIsPermanentAircrafts(context.Context, *UpdateIsPermanentAircraftsRequest) (*UpdateIsPermanentAircraftsResponse, error)
 	DeleteAircrafts(context.Context, *DeleteAircraftsRequest) (*DeleteAircraftsResponse, error)
 	mustEmbedUnimplementedAircraftServicesServer()
 }
@@ -93,6 +121,12 @@ func (UnimplementedAircraftServicesServer) GetAircraft(context.Context, *GetAirc
 }
 func (UnimplementedAircraftServicesServer) GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHistory not implemented")
+}
+func (UnimplementedAircraftServicesServer) GetGlobalPlayback(context.Context, *GlobalPlaybackRequest) (*GlobalPlaybackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGlobalPlayback not implemented")
+}
+func (UnimplementedAircraftServicesServer) UpdateIsPermanentAircrafts(context.Context, *UpdateIsPermanentAircraftsRequest) (*UpdateIsPermanentAircraftsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateIsPermanentAircrafts not implemented")
 }
 func (UnimplementedAircraftServicesServer) DeleteAircrafts(context.Context, *DeleteAircraftsRequest) (*DeleteAircraftsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteAircrafts not implemented")
@@ -154,6 +188,42 @@ func _AircraftServices_GetHistory_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AircraftServices_GetGlobalPlayback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GlobalPlaybackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AircraftServicesServer).GetGlobalPlayback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AircraftServices_GetGlobalPlayback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AircraftServicesServer).GetGlobalPlayback(ctx, req.(*GlobalPlaybackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AircraftServices_UpdateIsPermanentAircrafts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateIsPermanentAircraftsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AircraftServicesServer).UpdateIsPermanentAircrafts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AircraftServices_UpdateIsPermanentAircrafts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AircraftServicesServer).UpdateIsPermanentAircrafts(ctx, req.(*UpdateIsPermanentAircraftsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AircraftServices_DeleteAircrafts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteAircraftsRequest)
 	if err := dec(in); err != nil {
@@ -188,10 +258,18 @@ var AircraftServices_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AircraftServices_GetHistory_Handler,
 		},
 		{
+			MethodName: "GetGlobalPlayback",
+			Handler:    _AircraftServices_GetGlobalPlayback_Handler,
+		},
+		{
+			MethodName: "UpdateIsPermanentAircrafts",
+			Handler:    _AircraftServices_UpdateIsPermanentAircrafts_Handler,
+		},
+		{
 			MethodName: "DeleteAircrafts",
 			Handler:    _AircraftServices_DeleteAircrafts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "aircrafts.proto",
+	Metadata: "proto/aircrafts.proto",
 }
