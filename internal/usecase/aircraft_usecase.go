@@ -106,6 +106,7 @@ func (u *aircraftUseCase) startBatchWorker() {
 
 	batch := make([]domain.Aircraft, 0, batchSize)
 
+	//worker o vong lap vo han nay
 	for {
 		select {
 		case ac := <-u.dbChan:
