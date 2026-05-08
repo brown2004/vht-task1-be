@@ -2,7 +2,7 @@ package grpc_deliverry
 
 import (
 	"backend/domain"
-	pb "backend/pb/aircraft"
+	pb "backend/proto/pb/aircraft"
 	"context"
 )
 
@@ -129,4 +129,93 @@ func (h *AircraftGrpcHandler) UpdateIsPermanentAircrafts(ctx context.Context, re
 	}
 
 	return &pb.UpdateIsPermanentAircraftsResponse{Success: true}, nil
+}
+
+func (h *AircraftGrpcHandler) GetAircraftsByTimeWindow(ctx context.Context, req *pb.Session) (*pb.GetAircraftsByTimeWindowResponse, error) {
+	aircrafts, err := h.usecase.GetAircraftsByTimeWindow(ctx, req.FromTs, req.ToTs)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &pb.GetAircraftsByTimeWindowResponse{
+		AircraftIdentities: make([]*pb.AircraftIdentity, 0, len(aircrafts)),
+	}
+
+	for _, aircraft := range aircrafts {
+		resp.AircraftIdentities = append(resp.AircraftIdentities, &pb.AircraftIdentity{
+			Callsign:      aircraft.Callsign,
+			DetectionTime: aircraft.DetectionTime,
+		})
+	}
+
+	return resp, nil
+}
+
+func (h *AircraftGrpcHandler) GetPlaybackDataByTimeWindow(ctx context.Context, req *pb.GetPlaybackDataByTimeWindowRequest) (*pb.GlobalPlaybackResponse, error) {
+	aircraftIdentities := aircraftIdentitiesFromPB(req.GetAircrafts())
+	data, err := h.usecase.GetPlaybackDataByTimeWindow(ctx, aircraftIdentities, req.FromTs, req.ToTs)
+	if err != nil {
+		return nil, err
+	}
+
+	return playbackResponseFromDomain(data), nil
+}
+
+func (h *AircraftGrpcHandler) GetPlaybackDataBySession(ctx context.Context, req *pb.GetPlaybackDataBySessionRequest) (*pb.GlobalPlaybackResponse, error) {
+	aircraftIdentities := aircraftIdentitiesFromPB(req.GetAircrafts())
+	data, err := h.usecase.GetPlaybackDataBySession(
+		ctx,
+		aircraftIdentities,
+		req.FromTs,
+		req.ToTs,
+		req.GetSampleIntervalMs(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return playbackResponseFromDomain(data), nil
+}
+
+func aircraftIdentitiesFromPB(aircrafts []*pb.AircraftIdentity) []domain.AircraftIdentity {
+	aircraftIdentities := make([]domain.AircraftIdentity, 0, len(aircrafts))
+	for _, aircraft := range aircrafts {
+		if aircraft == nil {
+			continue
+		}
+		aircraftIdentities = append(aircraftIdentities, domain.AircraftIdentity{
+			Callsign:      aircraft.Callsign,
+			DetectionTime: aircraft.DetectionTime,
+		})
+	}
+	return aircraftIdentities
+}
+
+func playbackResponseFromDomain(data []domain.FlightPlayback) *pb.GlobalPlaybackResponse {
+	resp := &pb.GlobalPlaybackResponse{
+		Flights: make([]*pb.FlightPlayback, 0, len(data)),
+	}
+
+	for _, flight := range data {
+		positions := make([]*pb.PlaybackPosition, 0, len(flight.Positions))
+		for _, position := range flight.Positions {
+			positions = append(positions, &pb.PlaybackPosition{
+				Timestamp:   position.Timestamp,
+				Lat:         position.Lat,
+				Lng:         position.Lng,
+				Alt:         position.Alt,
+				Speed:       position.Speed,
+				Heading:     position.Heading,
+				IsPermanent: position.IsPermanent,
+			})
+		}
+
+		resp.Flights = append(resp.Flights, &pb.FlightPlayback{
+			Callsign:      flight.Callsign,
+			DetectionTime: flight.DetectionTime,
+			Positions:     positions,
+		})
+	}
+
+	return resp
 }

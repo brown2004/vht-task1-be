@@ -14,7 +14,7 @@ import (
 
 	"backend/internal/repo/postgres"
 	"backend/internal/usecase"
-	pb "backend/pb/aircraft"
+	pb "backend/proto/pb/aircraft"
 
 	_ "github.com/lib/pq" // Driver PostgreSQL
 	natsio "github.com/nats-io/nats.go"

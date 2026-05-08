@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	pb "backend/pb/aircraft"
+	pb "backend/proto/pb/aircraft"
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"

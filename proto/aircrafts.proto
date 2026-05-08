@@ -109,6 +109,29 @@ message GlobalPlaybackResponse {
     repeated FlightPlayback flights = 1; 
 }
 
+message Session {
+    int64 from_ts = 1;
+    int64 to_ts = 2;
+}
+
+message GetAircraftsByTimeWindowResponse{
+    repeated AircraftIdentity aircraft_identities = 1;
+}
+
+
+message GetPlaybackDataByTimeWindowRequest {
+    repeated AircraftIdentity aircrafts = 1;
+    int64 from_ts = 2;
+    int64 to_ts = 3;
+}
+
+message GetPlaybackDataBySessionRequest {
+    repeated AircraftIdentity aircrafts = 1;
+    int64 from_ts = 2;
+    int64 to_ts = 3;
+    int64 sample_interval_ms = 4;
+}
+
 service AircraftServices{
     rpc GetAircraft(GetAircraftRequest) returns (GetAircraftResponse); //  lay thong tin 1 may bay
     rpc GetHistory(GetHistoryRequest)   returns (GetHistoryResponse); // lay lich su quy dao 1 may bay
@@ -120,9 +143,12 @@ service AircraftServices{
 
     rpc DeleteAircrafts(DeleteAircraftsRequest)  returns (DeleteAircraftsResponse); // xoa cold data (clients call this function)
 
-    
+    rpc GetAircraftsByTimeWindow(Session)   returns (GetAircraftsByTimeWindowResponse);
+
+    rpc GetPlaybackDataByTimeWindow(GetPlaybackDataByTimeWindowRequest) returns (GlobalPlaybackResponse);
+
+    rpc GetPlaybackDataBySession(GetPlaybackDataBySessionRequest) returns (GlobalPlaybackResponse);
 }
 
 
 // to-do : sua lai be, fe de cac tinh nang cu chay duoc (vi them cac truong cua database)
-

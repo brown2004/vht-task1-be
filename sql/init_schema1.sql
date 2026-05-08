@@ -64,9 +64,9 @@ CREATE TABLE IF NOT EXISTS archived_position (
 CREATE INDEX IF NOT EXISTS idx_archived_position_cleanup 
 ON archived_position (is_permanent, timestamp);
 
-CREATE INDEX IF NOT EXISTS idx_archived_position_query 
-ON archived_position (aircraft_callsign, aircraft_detection_time, timestamp DESC);
-
 
 ALTER TABLE archived_position
 ADD PRIMARY KEY (aircraft_callsign, aircraft_detection_time, timestamp);
+
+-- note:
+-- - dang thieu hai truong la last_speed, last_heading

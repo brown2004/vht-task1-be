@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	pb "backend/pb/aircraft"
+	pb "backend/proto/pb/aircraft"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -447,6 +447,21 @@ func (u *aircraftUseCase) GetGlobalPlaybackData(ctx context.Context, fromTs int6
 	return result, nil
 }
 
-func (u *aircraftUseCase) startSlowArchiveWorker() {
-	// Để trống nếu chưa implement
+// / lay danh sach may bay xuat hien trong session
+func (u *aircraftUseCase) GetAircraftsByTimeWindow(ctx context.Context, fromTs, toTs int64) ([]domain.AircraftIdentity, error) {
+	return u.repo.GetAircraftsByTimeWindow(ctx, fromTs, toTs)
+}
+
+func (u *aircraftUseCase) GetPlaybackDataByTimeWindow(ctx context.Context, aircraftIdentities []domain.AircraftIdentity, fromTs, toTs int64) ([]domain.FlightPlayback, error) {
+	return u.repo.GetPlaybackDataByTimeWindow(ctx, aircraftIdentities, fromTs, toTs)
+}
+
+func (u *aircraftUseCase) GetPlaybackDataBySession(
+	ctx context.Context,
+	aircraftIdentities []domain.AircraftIdentity,
+	fromTs int64,
+	toTs int64,
+	sampleIntervalMs int64,
+) ([]domain.FlightPlayback, error) {
+	return u.repo.GetPlaybackDataBySession(ctx, aircraftIdentities, fromTs, toTs, sampleIntervalMs)
 }

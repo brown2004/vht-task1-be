@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v3.21.12
-// source: proto/aircrafts.proto
+// source: aircrafts.proto
 
 package aircraft
 
@@ -19,11 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AircraftServices_GetAircraft_FullMethodName                = "/targets.AircraftServices/GetAircraft"
-	AircraftServices_GetHistory_FullMethodName                 = "/targets.AircraftServices/GetHistory"
-	AircraftServices_GetGlobalPlayback_FullMethodName          = "/targets.AircraftServices/GetGlobalPlayback"
-	AircraftServices_UpdateIsPermanentAircrafts_FullMethodName = "/targets.AircraftServices/UpdateIsPermanentAircrafts"
-	AircraftServices_DeleteAircrafts_FullMethodName            = "/targets.AircraftServices/DeleteAircrafts"
+	AircraftServices_GetAircraft_FullMethodName                 = "/targets.AircraftServices/GetAircraft"
+	AircraftServices_GetHistory_FullMethodName                  = "/targets.AircraftServices/GetHistory"
+	AircraftServices_GetGlobalPlayback_FullMethodName           = "/targets.AircraftServices/GetGlobalPlayback"
+	AircraftServices_UpdateIsPermanentAircrafts_FullMethodName  = "/targets.AircraftServices/UpdateIsPermanentAircrafts"
+	AircraftServices_DeleteAircrafts_FullMethodName             = "/targets.AircraftServices/DeleteAircrafts"
+	AircraftServices_GetAircraftsByTimeWindow_FullMethodName    = "/targets.AircraftServices/GetAircraftsByTimeWindow"
+	AircraftServices_GetPlaybackDataByTimeWindow_FullMethodName = "/targets.AircraftServices/GetPlaybackDataByTimeWindow"
+	AircraftServices_GetPlaybackDataBySession_FullMethodName    = "/targets.AircraftServices/GetPlaybackDataBySession"
 )
 
 // AircraftServicesClient is the client API for AircraftServices service.
@@ -36,6 +39,9 @@ type AircraftServicesClient interface {
 	GetGlobalPlayback(ctx context.Context, in *GlobalPlaybackRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error)
 	UpdateIsPermanentAircrafts(ctx context.Context, in *UpdateIsPermanentAircraftsRequest, opts ...grpc.CallOption) (*UpdateIsPermanentAircraftsResponse, error)
 	DeleteAircrafts(ctx context.Context, in *DeleteAircraftsRequest, opts ...grpc.CallOption) (*DeleteAircraftsResponse, error)
+	GetAircraftsByTimeWindow(ctx context.Context, in *Session, opts ...grpc.CallOption) (*GetAircraftsByTimeWindowResponse, error)
+	GetPlaybackDataByTimeWindow(ctx context.Context, in *GetPlaybackDataByTimeWindowRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error)
+	GetPlaybackDataBySession(ctx context.Context, in *GetPlaybackDataBySessionRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error)
 }
 
 type aircraftServicesClient struct {
@@ -96,6 +102,36 @@ func (c *aircraftServicesClient) DeleteAircrafts(ctx context.Context, in *Delete
 	return out, nil
 }
 
+func (c *aircraftServicesClient) GetAircraftsByTimeWindow(ctx context.Context, in *Session, opts ...grpc.CallOption) (*GetAircraftsByTimeWindowResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAircraftsByTimeWindowResponse)
+	err := c.cc.Invoke(ctx, AircraftServices_GetAircraftsByTimeWindow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aircraftServicesClient) GetPlaybackDataByTimeWindow(ctx context.Context, in *GetPlaybackDataByTimeWindowRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GlobalPlaybackResponse)
+	err := c.cc.Invoke(ctx, AircraftServices_GetPlaybackDataByTimeWindow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aircraftServicesClient) GetPlaybackDataBySession(ctx context.Context, in *GetPlaybackDataBySessionRequest, opts ...grpc.CallOption) (*GlobalPlaybackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GlobalPlaybackResponse)
+	err := c.cc.Invoke(ctx, AircraftServices_GetPlaybackDataBySession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AircraftServicesServer is the server API for AircraftServices service.
 // All implementations must embed UnimplementedAircraftServicesServer
 // for forward compatibility.
@@ -106,6 +142,9 @@ type AircraftServicesServer interface {
 	GetGlobalPlayback(context.Context, *GlobalPlaybackRequest) (*GlobalPlaybackResponse, error)
 	UpdateIsPermanentAircrafts(context.Context, *UpdateIsPermanentAircraftsRequest) (*UpdateIsPermanentAircraftsResponse, error)
 	DeleteAircrafts(context.Context, *DeleteAircraftsRequest) (*DeleteAircraftsResponse, error)
+	GetAircraftsByTimeWindow(context.Context, *Session) (*GetAircraftsByTimeWindowResponse, error)
+	GetPlaybackDataByTimeWindow(context.Context, *GetPlaybackDataByTimeWindowRequest) (*GlobalPlaybackResponse, error)
+	GetPlaybackDataBySession(context.Context, *GetPlaybackDataBySessionRequest) (*GlobalPlaybackResponse, error)
 	mustEmbedUnimplementedAircraftServicesServer()
 }
 
@@ -130,6 +169,15 @@ func (UnimplementedAircraftServicesServer) UpdateIsPermanentAircrafts(context.Co
 }
 func (UnimplementedAircraftServicesServer) DeleteAircrafts(context.Context, *DeleteAircraftsRequest) (*DeleteAircraftsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteAircrafts not implemented")
+}
+func (UnimplementedAircraftServicesServer) GetAircraftsByTimeWindow(context.Context, *Session) (*GetAircraftsByTimeWindowResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAircraftsByTimeWindow not implemented")
+}
+func (UnimplementedAircraftServicesServer) GetPlaybackDataByTimeWindow(context.Context, *GetPlaybackDataByTimeWindowRequest) (*GlobalPlaybackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPlaybackDataByTimeWindow not implemented")
+}
+func (UnimplementedAircraftServicesServer) GetPlaybackDataBySession(context.Context, *GetPlaybackDataBySessionRequest) (*GlobalPlaybackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPlaybackDataBySession not implemented")
 }
 func (UnimplementedAircraftServicesServer) mustEmbedUnimplementedAircraftServicesServer() {}
 func (UnimplementedAircraftServicesServer) testEmbeddedByValue()                          {}
@@ -242,6 +290,60 @@ func _AircraftServices_DeleteAircrafts_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AircraftServices_GetAircraftsByTimeWindow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Session)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AircraftServicesServer).GetAircraftsByTimeWindow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AircraftServices_GetAircraftsByTimeWindow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AircraftServicesServer).GetAircraftsByTimeWindow(ctx, req.(*Session))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AircraftServices_GetPlaybackDataByTimeWindow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPlaybackDataByTimeWindowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AircraftServicesServer).GetPlaybackDataByTimeWindow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AircraftServices_GetPlaybackDataByTimeWindow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AircraftServicesServer).GetPlaybackDataByTimeWindow(ctx, req.(*GetPlaybackDataByTimeWindowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AircraftServices_GetPlaybackDataBySession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPlaybackDataBySessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AircraftServicesServer).GetPlaybackDataBySession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AircraftServices_GetPlaybackDataBySession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AircraftServicesServer).GetPlaybackDataBySession(ctx, req.(*GetPlaybackDataBySessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AircraftServices_ServiceDesc is the grpc.ServiceDesc for AircraftServices service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -269,7 +371,19 @@ var AircraftServices_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeleteAircrafts",
 			Handler:    _AircraftServices_DeleteAircrafts_Handler,
 		},
+		{
+			MethodName: "GetAircraftsByTimeWindow",
+			Handler:    _AircraftServices_GetAircraftsByTimeWindow_Handler,
+		},
+		{
+			MethodName: "GetPlaybackDataByTimeWindow",
+			Handler:    _AircraftServices_GetPlaybackDataByTimeWindow_Handler,
+		},
+		{
+			MethodName: "GetPlaybackDataBySession",
+			Handler:    _AircraftServices_GetPlaybackDataBySession_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/aircrafts.proto",
+	Metadata: "aircrafts.proto",
 }

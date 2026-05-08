@@ -338,3 +338,255 @@ func (r *aircraftRepository) GetAllArchivedPositionsByTimeWindow(ctx context.Con
 
 	return flatData, nil
 }
+
+func (r *aircraftRepository) GetAircraftsByTimeWindow(ctx context.Context, fromTs, toTs int64) ([]domain.AircraftIdentity, error) {
+	query := `
+		select distinct aircraft_callsign, aircraft_detection_time
+		from archived_position 
+		where timestamp >= $1 and timestamp <=$2
+	`
+	rows, err := r.db.QueryContext(ctx, query, fromTs, toTs)
+	if err != nil {
+		return nil, fmt.Errorf("loi truy van GetAircraftsByTimeWindow: %w", err)
+	}
+	defer rows.Close()
+
+	var aircraftsIdentifys []domain.AircraftIdentity
+	for rows.Next() {
+		var ai domain.AircraftIdentity
+		err := rows.Scan(&ai.Callsign, &ai.DetectionTime)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan aircraft identity in GetAircraftsByTimeWindow: %w", err)
+		}
+		aircraftsIdentifys = append(aircraftsIdentifys, ai)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating aircraft identities in GetAircraftsByTimeWindow: %w", err)
+	}
+
+	return aircraftsIdentifys, nil
+}
+
+func (r *aircraftRepository) GetPlaybackDataByTimeWindow(ctx context.Context, aircraftIdentities []domain.AircraftIdentity, fromTs, toTs int64) ([]domain.FlightPlayback, error) {
+	if len(aircraftIdentities) == 0 {
+		return nil, nil
+	}
+
+	callsigns := make([]string, 0, len(aircraftIdentities))
+	detectionTimes := make([]int64, 0, len(aircraftIdentities))
+	for _, identity := range aircraftIdentities {
+		callsigns = append(callsigns, identity.Callsign)
+		detectionTimes = append(detectionTimes, identity.DetectionTime)
+	}
+
+	query := `
+		WITH selected AS (
+			SELECT DISTINCT *
+			FROM unnest($3::text[], $4::bigint[]) AS s(callsign, detection_time)
+		)
+		SELECT ap.aircraft_callsign,
+			   ap.aircraft_detection_time,
+			   ap.lat,
+			   ap.lng,
+			   ap.alt,
+			   ap.speed,
+			   ap.heading,
+			   ap.timestamp,
+			   ap.is_permanent
+		FROM archived_position ap
+		JOIN selected s
+		  ON s.callsign = ap.aircraft_callsign
+		 AND s.detection_time = ap.aircraft_detection_time
+		WHERE ap.timestamp >= $1
+		  AND ap.timestamp < $2
+		ORDER BY ap.aircraft_callsign, ap.aircraft_detection_time, ap.timestamp ASC
+	`
+	rows, err := r.db.QueryContext(ctx, query, fromTs, toTs, pq.Array(callsigns), pq.Array(detectionTimes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get playback data by time window: %w", err)
+	}
+	defer rows.Close()
+
+	flightByKey := make(map[flightKey]*domain.FlightPlayback)
+	var flights []domain.FlightPlayback
+
+	for rows.Next() {
+		var callsign string
+		var detectionTime int64
+		var position domain.Position
+
+		err := rows.Scan(
+			&callsign,
+			&detectionTime,
+			&position.Lat,
+			&position.Lng,
+			&position.Alt,
+			&position.Speed,
+			&position.Heading,
+			&position.Timestamp,
+			&position.IsPermanent,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan playback position: %w", err)
+		}
+
+		key := flightKey{callsign: callsign, detectionTime: detectionTime}
+		flight, exists := flightByKey[key]
+		if !exists {
+			flights = append(flights, domain.FlightPlayback{
+				Callsign:      callsign,
+				DetectionTime: detectionTime,
+				Positions:     make([]domain.Position, 0),
+			})
+			flight = &flights[len(flights)-1]
+			flightByKey[key] = flight
+		}
+
+		flight.Positions = append(flight.Positions, position)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating playback positions: %w", err)
+	}
+
+	return flights, nil
+}
+
+func (r *aircraftRepository) GetPlaybackDataBySession(
+	ctx context.Context,
+	aircraftIdentities []domain.AircraftIdentity,
+	fromTs int64,
+	toTs int64,
+	sampleIntervalMs int64,
+) ([]domain.FlightPlayback, error) {
+	if len(aircraftIdentities) == 0 {
+		return nil, nil
+	}
+
+	callsigns := make([]string, 0, len(aircraftIdentities))
+	detectionTimes := make([]int64, 0, len(aircraftIdentities))
+
+	for _, aircraft := range aircraftIdentities {
+		callsigns = append(callsigns, aircraft.Callsign)
+		detectionTimes = append(detectionTimes, aircraft.DetectionTime)
+	}
+
+	args := []any{
+		fromTs,
+		toTs,
+		pq.Array(callsigns),
+		pq.Array(detectionTimes),
+	}
+
+	query := `
+		WITH selected AS (
+			SELECT DISTINCT *
+			FROM unnest($3::text[], $4::bigint[]) AS s(callsign, detection_time)
+		)
+		SELECT
+			ap.aircraft_callsign,
+			ap.aircraft_detection_time,
+			ap.lat,
+			ap.lng,
+			ap.alt,
+			ap.speed,
+			ap.heading,
+			ap.timestamp,
+			ap.is_permanent
+		FROM archived_position ap
+		JOIN selected s
+		  ON s.callsign = ap.aircraft_callsign
+		 AND s.detection_time = ap.aircraft_detection_time
+		WHERE ap.timestamp >= $1
+		  AND ap.timestamp <= $2
+		ORDER BY
+			ap.aircraft_callsign,
+			ap.aircraft_detection_time,
+			ap.timestamp ASC
+	`
+
+	if sampleIntervalMs > 0 {
+		query = `
+			WITH selected AS (
+				SELECT DISTINCT *
+				FROM unnest($3::text[], $4::bigint[]) AS s(callsign, detection_time)
+			)
+			SELECT DISTINCT ON (
+				ap.aircraft_callsign,
+				ap.aircraft_detection_time,
+				((ap.timestamp - $1) / $5::bigint)
+			)
+				ap.aircraft_callsign,
+				ap.aircraft_detection_time,
+				ap.lat,
+				ap.lng,
+				ap.alt,
+				ap.speed,
+				ap.heading,
+				ap.timestamp,
+				ap.is_permanent
+			FROM archived_position ap
+			JOIN selected s
+			  ON s.callsign = ap.aircraft_callsign
+			 AND s.detection_time = ap.aircraft_detection_time
+			WHERE ap.timestamp >= $1
+			  AND ap.timestamp <= $2
+			ORDER BY
+				ap.aircraft_callsign,
+				ap.aircraft_detection_time,
+				((ap.timestamp - $1) / $5::bigint),
+				ap.timestamp ASC
+		`
+		args = append(args, sampleIntervalMs)
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query trajectory by session: %w", err)
+	}
+	defer rows.Close()
+
+	flightIndexByKey := make(map[flightKey]int)
+	flights := make([]domain.FlightPlayback, 0)
+
+	for rows.Next() {
+		var callsign string
+		var detectionTime int64
+		var pos domain.Position
+
+		if err := rows.Scan(
+			&callsign,
+			&detectionTime,
+			&pos.Lat,
+			&pos.Lng,
+			&pos.Alt,
+			&pos.Speed,
+			&pos.Heading,
+			&pos.Timestamp,
+			&pos.IsPermanent,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan archived_position row: %w", err)
+		}
+
+		key := flightKey{callsign: callsign, detectionTime: detectionTime}
+
+		index, exists := flightIndexByKey[key]
+		if !exists {
+			flights = append(flights, domain.FlightPlayback{
+				Callsign:      callsign,
+				DetectionTime: detectionTime,
+				Positions:     make([]domain.Position, 0),
+			})
+			index = len(flights) - 1
+			flightIndexByKey[key] = index
+		}
+
+		flights[index].Positions = append(flights[index].Positions, pos)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating archived_position rows: %w", err)
+	}
+
+	return flights, nil
+}

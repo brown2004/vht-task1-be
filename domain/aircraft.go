@@ -8,6 +8,11 @@ const (
 	Hostile  int = 2
 )
 
+type AircraftIdentity struct {
+	Callsign      string
+	DetectionTime int64
+}
+
 type Aircraft struct {
 	Callsign       string
 	DetectionTime  int64
@@ -48,6 +53,9 @@ type AircraftRepository interface {
 	GetHistoryPositions(ctx context.Context, callsign string, detectionTime int64) ([]Aircraft, error)
 	CleanupExpiredPositions(ctx context.Context, cutoffTimestamp int64) error
 	GetAllArchivedPositionsByTimeWindow(ctx context.Context, fromTs int64, toTs int64) ([]Aircraft, error)
+	GetAircraftsByTimeWindow(ctx context.Context, fromTs, toTs int64) ([]AircraftIdentity, error)
+	GetPlaybackDataByTimeWindow(ctx context.Context, aircraftIdentities []AircraftIdentity, fromTs, toTs int64) ([]FlightPlayback, error)
+	GetPlaybackDataBySession(ctx context.Context, aircraftIdentities []AircraftIdentity, fromTs, toTs, sampleIntervalMs int64) ([]FlightPlayback, error)
 }
 
 type AircraftUsecase interface {
@@ -59,6 +67,9 @@ type AircraftUsecase interface {
 	GetHistoryPositions(ctx context.Context, callsign string, detectionTime int64) ([]Aircraft, error)
 	MarkPositionsAsPermanent(ctx context.Context, callsign string, detectionTime int64, fromTs int64, toTs int64) error
 	GetGlobalPlaybackData(ctx context.Context, fromTs int64, toTs int64) ([]FlightPlayback, error)
+	GetAircraftsByTimeWindow(ctx context.Context, fromTs, toTs int64) ([]AircraftIdentity, error)
+	GetPlaybackDataByTimeWindow(ctx context.Context, aircraftIdentities []AircraftIdentity, fromTs, toTs int64) ([]FlightPlayback, error)
+	GetPlaybackDataBySession(ctx context.Context, aircraftIdentities []AircraftIdentity, fromTs, toTs, sampleIntervalMs int64) ([]FlightPlayback, error)
 }
 
 type NatsPublisher interface {
