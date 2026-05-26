@@ -102,9 +102,11 @@ func (h *AircraftGrpcHandler) GetGlobalPlayback(ctx context.Context, req *pb.Glo
 		}
 
 		resp.Flights = append(resp.Flights, &pb.FlightPlayback{
-			Callsign:      f.Callsign,
-			DetectionTime: f.DetectionTime,
-			Positions:     pbPositions,
+			Callsign:       f.Callsign,
+			DetectionTime:  f.DetectionTime,
+			Positions:      pbPositions,
+			Category:       pb.Category(f.Category),
+			Classification: f.Classification,
 		})
 	}
 
@@ -211,9 +213,11 @@ func playbackResponseFromDomain(data []domain.FlightPlayback) *pb.GlobalPlayback
 		}
 
 		resp.Flights = append(resp.Flights, &pb.FlightPlayback{
-			Callsign:      flight.Callsign,
-			DetectionTime: flight.DetectionTime,
-			Positions:     positions,
+			Callsign:       flight.Callsign,
+			DetectionTime:  flight.DetectionTime,
+			Positions:      positions,
+			Category:       pb.Category(flight.Category),
+			Classification: flight.Classification,
 		})
 	}
 

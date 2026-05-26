@@ -223,36 +223,59 @@ func (u *aircraftUseCase) startPipelineStatsWorker() {
 	var lastReceived uint64
 	var lastHot uint64
 	var lastCold uint64
+	var lastHotErr uint64
+	var lastColdErr uint64
+	var lastDroppedDB uint64
+	var lastDroppedNATS uint64
+	var lastDroppedHot uint64
+	var lastDroppedCold uint64
 
 	for range ticker.C {
 		received := atomic.LoadUint64(&u.receivedUpdates)
 		hotUpdates := atomic.LoadUint64(&u.hotFlushUpdates)
 		coldUpdates := atomic.LoadUint64(&u.coldFlushUpdates)
-
-		receivedDelta := received - lastReceived
-		hotDelta := hotUpdates - lastHot
-		coldDelta := coldUpdates - lastCold
-
-		lastReceived = received
-		lastHot = hotUpdates
-		lastCold = coldUpdates
-
-		dbQueue := len(u.dbChan)
-		natsQueue := len(u.natsChan)
-		hotQueue := len(u.hotBatches)
-		coldQueue := len(u.coldBatches)
 		hotErr := atomic.LoadUint64(&u.hotFlushErr)
 		coldErr := atomic.LoadUint64(&u.coldFlushErr)
 		droppedDB := atomic.LoadUint64(&u.droppedDBUpdates)
 		droppedNATS := atomic.LoadUint64(&u.droppedNATSUpdates)
 		droppedHot := atomic.LoadUint64(&u.droppedHotBatches)
 		droppedCold := atomic.LoadUint64(&u.droppedColdBatches)
+
+		receivedDelta := received - lastReceived
+		hotDelta := hotUpdates - lastHot
+		coldDelta := coldUpdates - lastCold
+		hotErrDelta := hotErr - lastHotErr
+		coldErrDelta := coldErr - lastColdErr
+		droppedDBDelta := droppedDB - lastDroppedDB
+		droppedNATSDelta := droppedNATS - lastDroppedNATS
+		droppedHotDelta := droppedHot - lastDroppedHot
+		droppedColdDelta := droppedCold - lastDroppedCold
+
+		lastReceived = received
+		lastHot = hotUpdates
+		lastCold = coldUpdates
+		lastHotErr = hotErr
+		lastColdErr = coldErr
+		lastDroppedDB = droppedDB
+		lastDroppedNATS = droppedNATS
+		lastDroppedHot = droppedHot
+		lastDroppedCold = droppedCold
+
+		dbQueue := len(u.dbChan)
+		natsQueue := len(u.natsChan)
+		hotQueue := len(u.hotBatches)
+		coldQueue := len(u.coldBatches)
 		level := "OK"
-		if hotErr > 0 || coldErr > 0 || droppedDB > 0 || droppedNATS > 0 || droppedHot > 0 || droppedCold > 0 {
+		if hotErrDelta > 0 ||
+			coldErrDelta > 0 ||
+			droppedDBDelta > 0 ||
+			droppedNATSDelta > 0 ||
+			droppedHotDelta > 0 ||
+			droppedColdDelta > 0 {
 			level = "ERROR"
 		}
 
-		log.Printf("[USECASE %s] input total=%d rate=%.0f/s | queues db=%d/%d live=%d/%d hot=%d/%d cold=%d/%d | batches=%d | hot saved=%d rate=%.0f/s errors=%d | cold saved=%d rate=%.0f/s errors=%d | drops db=%d live=%d hot_batch=%d cold_batch=%d",
+		log.Printf("[USECASE %s] input total=%d rate=%.0f/s | queues db=%d/%d live=%d/%d hot=%d/%d cold=%d/%d | batches=%d | hot saved=%d rate=%.0f/s errors=%d(+%d) | cold saved=%d rate=%.0f/s errors=%d(+%d) | drops db=%d(+%d) live=%d(+%d) hot_batch=%d(+%d) cold_batch=%d(+%d)",
 			level,
 			received,
 			float64(receivedDelta)/2.0,
@@ -268,13 +291,19 @@ func (u *aircraftUseCase) startPipelineStatsWorker() {
 			hotUpdates,
 			float64(hotDelta)/2.0,
 			hotErr,
+			hotErrDelta,
 			coldUpdates,
 			float64(coldDelta)/2.0,
 			coldErr,
+			coldErrDelta,
 			droppedDB,
+			droppedDBDelta,
 			droppedNATS,
+			droppedNATSDelta,
 			droppedHot,
+			droppedHotDelta,
 			droppedCold,
+			droppedColdDelta,
 		)
 	}
 }
@@ -283,49 +312,100 @@ func (u *aircraftUseCase) sendFrameToNATS() {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	var currentFrame []domain.Aircraft
+	const maxDrainPerFrame = 50000
+
+	liveAircrafts := make(map[aircraftKey]domain.Aircraft)
+	liveLastSeen := make(map[aircraftKey]time.Time)
+	latestByCallsign := make(map[string]aircraftKey)
 
 	for {
-		select {
-		case ac := <-u.natsChan:
-			currentFrame = append(currentFrame, ac)
+		ac := <-u.natsChan
+		key := aircraftKey{Callsign: ac.Callsign, DetectionTime: ac.DetectionTime}
+		if previousKey, exists := latestByCallsign[ac.Callsign]; exists && previousKey != key {
+			if previousKey.DetectionTime < key.DetectionTime {
+				delete(liveAircrafts, previousKey)
+				delete(liveLastSeen, previousKey)
+			} else {
+				continue
+			}
+		}
+		latestByCallsign[ac.Callsign] = key
+		liveAircrafts[key] = ac
+		liveLastSeen[key] = time.Now()
 
+		select {
 		case <-ticker.C:
-			if len(currentFrame) == 0 {
+			drained := 0
+		drainLoop:
+			for ; drained < maxDrainPerFrame; drained++ {
+				select {
+				case ac := <-u.natsChan:
+					key := aircraftKey{Callsign: ac.Callsign, DetectionTime: ac.DetectionTime}
+					if previousKey, exists := latestByCallsign[ac.Callsign]; exists && previousKey != key {
+						if previousKey.DetectionTime < key.DetectionTime {
+							delete(liveAircrafts, previousKey)
+							delete(liveLastSeen, previousKey)
+						} else {
+							continue
+						}
+					}
+					latestByCallsign[ac.Callsign] = key
+					liveAircrafts[key] = ac
+					liveLastSeen[key] = time.Now()
+				default:
+					break drainLoop
+				}
+			}
+
+			now := time.Now()
+			for key, last := range liveLastSeen {
+				if now.Sub(last) > 5*time.Second {
+					delete(liveAircrafts, key)
+					delete(liveLastSeen, key)
+					if latestKey, exists := latestByCallsign[key.Callsign]; exists && latestKey == key {
+						delete(latestByCallsign, key.Callsign)
+					}
+				}
+			}
+
+			if len(liveAircrafts) == 0 {
 				continue
 			}
 
 			frameMsg := &pb.AircraftFrame{
 				FrameTimestamp: time.Now().UnixMilli(),
-				Data:           make([]*pb.AircraftUpdate, 0, len(currentFrame)),
+				Data:           make([]*pb.AircraftUpdate, 0, len(liveAircrafts)),
 			}
 
-			for _, ac := range currentFrame {
+			for _, ac := range liveAircrafts {
 				frameMsg.Data = append(frameMsg.Data, &pb.AircraftUpdate{
 					Callsign:      ac.Callsign,
 					DetectionTime: ac.DetectionTime,
 					Category:      pb.Category(ac.Category),
 					Position: &pb.Position{
-						Lat:   ac.LastLat,
-						Lng:   ac.LastLng,
-						Alt:   ac.LastAlt,
-						Speed: ac.Speed,
+						Lat:     ac.LastLat,
+						Lng:     ac.LastLng,
+						Alt:     ac.LastAlt,
+						Speed:   ac.Speed,
+						Heading: ac.Heading,
 					},
-					Timestamp: ac.LastTimestamp,
+					Timestamp:      ac.LastTimestamp,
+					Mode_3A:        ac.Mode3A,
+					Classification: ac.Classification,
 				})
 			}
 
 			// Dong goi vao protobuf
 			data, err := proto.Marshal(frameMsg)
 			if err != nil {
-				log.Printf("[USECASE ERROR] marshal live frame failed updates=%d err=%v", len(currentFrame), err)
+				log.Printf("[USECASE ERROR] marshal live frame failed aircrafts=%d err=%v", len(liveAircrafts), err)
 			} else {
 				err = u.publisher.PublishLiveFrame(data) // goi ham publish cua nats publisher
 				if err != nil {
-					log.Printf("[USECASE ERROR] publish live frame failed updates=%d bytes=%d err=%v", len(currentFrame), len(data), err)
+					log.Printf("[USECASE ERROR] publish live frame failed aircrafts=%d bytes=%d err=%v", len(liveAircrafts), len(data), err)
 				}
 			}
-			currentFrame = nil
+		default:
 		}
 	}
 }
@@ -420,9 +500,11 @@ func (u *aircraftUseCase) GetGlobalPlaybackData(ctx context.Context, fromTs int6
 
 		if _, exists := groupedMap[key]; !exists {
 			groupedMap[key] = &domain.FlightPlayback{
-				Callsign:      ac.Callsign,
-				DetectionTime: ac.DetectionTime,
-				Positions:     make([]domain.Position, 0),
+				Callsign:       ac.Callsign,
+				DetectionTime:  ac.DetectionTime,
+				Category:       ac.Category,
+				Classification: ac.Classification,
+				Positions:      make([]domain.Position, 0),
 			}
 		}
 

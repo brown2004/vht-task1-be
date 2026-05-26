@@ -301,10 +301,23 @@ func (r *aircraftRepository) GetHistoryPositions(ctx context.Context, callsign s
 
 func (r *aircraftRepository) GetAllArchivedPositionsByTimeWindow(ctx context.Context, fromTs int64, toTs int64) ([]domain.Aircraft, error) {
 	query := `
-		SELECT aircraft_callsign, aircraft_detection_time, lat, lng, alt, speed, heading, timestamp, is_permanent
-		FROM archived_position
-		WHERE timestamp >= $1 AND timestamp <= $2
-		ORDER BY timestamp ASC
+		SELECT ap.aircraft_callsign,
+			   ap.aircraft_detection_time,
+			   s.category,
+			   s.classification,
+			   ap.lat,
+			   ap.lng,
+			   ap.alt,
+			   ap.speed,
+			   ap.heading,
+			   ap.timestamp,
+			   ap.is_permanent
+		FROM archived_position ap
+		JOIN archived_flight_summary s
+		  ON s.callsign = ap.aircraft_callsign
+		 AND s.detection_time = ap.aircraft_detection_time
+		WHERE ap.timestamp >= $1 AND ap.timestamp <= $2
+		ORDER BY ap.timestamp ASC
 	`
 	rows, err := r.db.QueryContext(ctx, query, fromTs, toTs)
 	if err != nil {
@@ -315,9 +328,12 @@ func (r *aircraftRepository) GetAllArchivedPositionsByTimeWindow(ctx context.Con
 	var flatData []domain.Aircraft
 	for rows.Next() {
 		var ac domain.Aircraft
+		var classification sql.NullString
 		err := rows.Scan(
 			&ac.Callsign,
 			&ac.DetectionTime,
+			&ac.Category,
+			&classification,
 			&ac.LastLat,
 			&ac.LastLng,
 			&ac.LastAlt,
@@ -328,6 +344,9 @@ func (r *aircraftRepository) GetAllArchivedPositionsByTimeWindow(ctx context.Con
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan position: %w", err)
+		}
+		if classification.Valid {
+			ac.Classification = classification.String
 		}
 		flatData = append(flatData, ac)
 	}
@@ -386,6 +405,8 @@ func (r *aircraftRepository) GetPlaybackDataByTimeWindow(ctx context.Context, ai
 		)
 		SELECT ap.aircraft_callsign,
 			   ap.aircraft_detection_time,
+			   afs.category,
+			   afs.classification,
 			   ap.lat,
 			   ap.lng,
 			   ap.alt,
@@ -397,6 +418,9 @@ func (r *aircraftRepository) GetPlaybackDataByTimeWindow(ctx context.Context, ai
 		JOIN selected s
 		  ON s.callsign = ap.aircraft_callsign
 		 AND s.detection_time = ap.aircraft_detection_time
+		JOIN archived_flight_summary afs
+		  ON afs.callsign = ap.aircraft_callsign
+		 AND afs.detection_time = ap.aircraft_detection_time
 		WHERE ap.timestamp >= $1
 		  AND ap.timestamp < $2
 		ORDER BY ap.aircraft_callsign, ap.aircraft_detection_time, ap.timestamp ASC
@@ -413,11 +437,15 @@ func (r *aircraftRepository) GetPlaybackDataByTimeWindow(ctx context.Context, ai
 	for rows.Next() {
 		var callsign string
 		var detectionTime int64
+		var category int
+		var classification sql.NullString
 		var position domain.Position
 
 		err := rows.Scan(
 			&callsign,
 			&detectionTime,
+			&category,
+			&classification,
 			&position.Lat,
 			&position.Lng,
 			&position.Alt,
@@ -434,9 +462,11 @@ func (r *aircraftRepository) GetPlaybackDataByTimeWindow(ctx context.Context, ai
 		flight, exists := flightByKey[key]
 		if !exists {
 			flights = append(flights, domain.FlightPlayback{
-				Callsign:      callsign,
-				DetectionTime: detectionTime,
-				Positions:     make([]domain.Position, 0),
+				Callsign:       callsign,
+				DetectionTime:  detectionTime,
+				Category:       category,
+				Classification: classification.String,
+				Positions:      make([]domain.Position, 0),
 			})
 			flight = &flights[len(flights)-1]
 			flightByKey[key] = flight
@@ -486,6 +516,8 @@ func (r *aircraftRepository) GetPlaybackDataBySession(
 		SELECT
 			ap.aircraft_callsign,
 			ap.aircraft_detection_time,
+			afs.category,
+			afs.classification,
 			ap.lat,
 			ap.lng,
 			ap.alt,
@@ -497,6 +529,9 @@ func (r *aircraftRepository) GetPlaybackDataBySession(
 		JOIN selected s
 		  ON s.callsign = ap.aircraft_callsign
 		 AND s.detection_time = ap.aircraft_detection_time
+		JOIN archived_flight_summary afs
+		  ON afs.callsign = ap.aircraft_callsign
+		 AND afs.detection_time = ap.aircraft_detection_time
 		WHERE ap.timestamp >= $1
 		  AND ap.timestamp <= $2
 		ORDER BY
@@ -518,6 +553,8 @@ func (r *aircraftRepository) GetPlaybackDataBySession(
 			)
 				ap.aircraft_callsign,
 				ap.aircraft_detection_time,
+				afs.category,
+				afs.classification,
 				ap.lat,
 				ap.lng,
 				ap.alt,
@@ -529,6 +566,9 @@ func (r *aircraftRepository) GetPlaybackDataBySession(
 			JOIN selected s
 			  ON s.callsign = ap.aircraft_callsign
 			 AND s.detection_time = ap.aircraft_detection_time
+			JOIN archived_flight_summary afs
+			  ON afs.callsign = ap.aircraft_callsign
+			 AND afs.detection_time = ap.aircraft_detection_time
 			WHERE ap.timestamp >= $1
 			  AND ap.timestamp <= $2
 			ORDER BY
@@ -552,11 +592,15 @@ func (r *aircraftRepository) GetPlaybackDataBySession(
 	for rows.Next() {
 		var callsign string
 		var detectionTime int64
+		var category int
+		var classification sql.NullString
 		var pos domain.Position
 
 		if err := rows.Scan(
 			&callsign,
 			&detectionTime,
+			&category,
+			&classification,
 			&pos.Lat,
 			&pos.Lng,
 			&pos.Alt,
@@ -573,9 +617,11 @@ func (r *aircraftRepository) GetPlaybackDataBySession(
 		index, exists := flightIndexByKey[key]
 		if !exists {
 			flights = append(flights, domain.FlightPlayback{
-				Callsign:      callsign,
-				DetectionTime: detectionTime,
-				Positions:     make([]domain.Position, 0),
+				Callsign:       callsign,
+				DetectionTime:  detectionTime,
+				Category:       category,
+				Classification: classification.String,
+				Positions:      make([]domain.Position, 0),
 			})
 			index = len(flights) - 1
 			flightIndexByKey[key] = index

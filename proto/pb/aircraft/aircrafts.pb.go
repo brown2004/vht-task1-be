@@ -856,12 +856,14 @@ func (x *PlaybackPosition) GetIsPermanent() bool {
 }
 
 type FlightPlayback struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Callsign      string                 `protobuf:"bytes,1,opt,name=callsign,proto3" json:"callsign,omitempty"`
-	DetectionTime int64                  `protobuf:"varint,2,opt,name=detection_time,json=detectionTime,proto3" json:"detection_time,omitempty"`
-	Positions     []*PlaybackPosition    `protobuf:"bytes,3,rep,name=positions,proto3" json:"positions,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Callsign       string                 `protobuf:"bytes,1,opt,name=callsign,proto3" json:"callsign,omitempty"`
+	DetectionTime  int64                  `protobuf:"varint,2,opt,name=detection_time,json=detectionTime,proto3" json:"detection_time,omitempty"`
+	Positions      []*PlaybackPosition    `protobuf:"bytes,3,rep,name=positions,proto3" json:"positions,omitempty"`
+	Category       Category               `protobuf:"varint,4,opt,name=category,proto3,enum=targets.Category" json:"category,omitempty"`
+	Classification string                 `protobuf:"bytes,5,opt,name=classification,proto3" json:"classification,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *FlightPlayback) Reset() {
@@ -913,6 +915,20 @@ func (x *FlightPlayback) GetPositions() []*PlaybackPosition {
 		return x.Positions
 	}
 	return nil
+}
+
+func (x *FlightPlayback) GetCategory() Category {
+	if x != nil {
+		return x.Category
+	}
+	return Category_CATEGORY_UNKNOWN
+}
+
+func (x *FlightPlayback) GetClassification() string {
+	if x != nil {
+		return x.Classification
+	}
+	return ""
 }
 
 type GlobalPlaybackResponse struct {
@@ -1236,11 +1252,13 @@ const file_aircrafts_proto_rawDesc = "" +
 	"\x03alt\x18\x04 \x01(\x01R\x03alt\x12\x14\n" +
 	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\x18\n" +
 	"\aheading\x18\x06 \x01(\x01R\aheading\x12!\n" +
-	"\fis_permanent\x18\a \x01(\bR\visPermanent\"\x8c\x01\n" +
+	"\fis_permanent\x18\a \x01(\bR\visPermanent\"\xe3\x01\n" +
 	"\x0eFlightPlayback\x12\x1a\n" +
 	"\bcallsign\x18\x01 \x01(\tR\bcallsign\x12%\n" +
 	"\x0edetection_time\x18\x02 \x01(\x03R\rdetectionTime\x127\n" +
-	"\tpositions\x18\x03 \x03(\v2\x19.targets.PlaybackPositionR\tpositions\"K\n" +
+	"\tpositions\x18\x03 \x03(\v2\x19.targets.PlaybackPositionR\tpositions\x12-\n" +
+	"\bcategory\x18\x04 \x01(\x0e2\x11.targets.CategoryR\bcategory\x12&\n" +
+	"\x0eclassification\x18\x05 \x01(\tR\x0eclassification\"K\n" +
 	"\x16GlobalPlaybackResponse\x121\n" +
 	"\aflights\x18\x01 \x03(\v2\x17.targets.FlightPlaybackR\aflights\"7\n" +
 	"\aSession\x12\x17\n" +
@@ -1320,31 +1338,32 @@ var file_aircrafts_proto_depIdxs = []int32{
 	2,  // 7: targets.UpdateIsPermanentAircraftsRequest.aircraft:type_name -> targets.AircraftIdentity
 	2,  // 8: targets.DeleteAircraftsRequest.aircrafts:type_name -> targets.AircraftIdentity
 	14, // 9: targets.FlightPlayback.positions:type_name -> targets.PlaybackPosition
-	15, // 10: targets.GlobalPlaybackResponse.flights:type_name -> targets.FlightPlayback
-	2,  // 11: targets.GetAircraftsByTimeWindowResponse.aircraft_identities:type_name -> targets.AircraftIdentity
-	2,  // 12: targets.GetPlaybackDataByTimeWindowRequest.aircrafts:type_name -> targets.AircraftIdentity
-	2,  // 13: targets.GetPlaybackDataBySessionRequest.aircrafts:type_name -> targets.AircraftIdentity
-	7,  // 14: targets.AircraftServices.GetAircraft:input_type -> targets.GetAircraftRequest
-	4,  // 15: targets.AircraftServices.GetHistory:input_type -> targets.GetHistoryRequest
-	13, // 16: targets.AircraftServices.GetGlobalPlayback:input_type -> targets.GlobalPlaybackRequest
-	9,  // 17: targets.AircraftServices.UpdateIsPermanentAircrafts:input_type -> targets.UpdateIsPermanentAircraftsRequest
-	11, // 18: targets.AircraftServices.DeleteAircrafts:input_type -> targets.DeleteAircraftsRequest
-	17, // 19: targets.AircraftServices.GetAircraftsByTimeWindow:input_type -> targets.Session
-	19, // 20: targets.AircraftServices.GetPlaybackDataByTimeWindow:input_type -> targets.GetPlaybackDataByTimeWindowRequest
-	20, // 21: targets.AircraftServices.GetPlaybackDataBySession:input_type -> targets.GetPlaybackDataBySessionRequest
-	8,  // 22: targets.AircraftServices.GetAircraft:output_type -> targets.GetAircraftResponse
-	5,  // 23: targets.AircraftServices.GetHistory:output_type -> targets.GetHistoryResponse
-	16, // 24: targets.AircraftServices.GetGlobalPlayback:output_type -> targets.GlobalPlaybackResponse
-	10, // 25: targets.AircraftServices.UpdateIsPermanentAircrafts:output_type -> targets.UpdateIsPermanentAircraftsResponse
-	12, // 26: targets.AircraftServices.DeleteAircrafts:output_type -> targets.DeleteAircraftsResponse
-	18, // 27: targets.AircraftServices.GetAircraftsByTimeWindow:output_type -> targets.GetAircraftsByTimeWindowResponse
-	16, // 28: targets.AircraftServices.GetPlaybackDataByTimeWindow:output_type -> targets.GlobalPlaybackResponse
-	16, // 29: targets.AircraftServices.GetPlaybackDataBySession:output_type -> targets.GlobalPlaybackResponse
-	22, // [22:30] is the sub-list for method output_type
-	14, // [14:22] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	0,  // 10: targets.FlightPlayback.category:type_name -> targets.Category
+	15, // 11: targets.GlobalPlaybackResponse.flights:type_name -> targets.FlightPlayback
+	2,  // 12: targets.GetAircraftsByTimeWindowResponse.aircraft_identities:type_name -> targets.AircraftIdentity
+	2,  // 13: targets.GetPlaybackDataByTimeWindowRequest.aircrafts:type_name -> targets.AircraftIdentity
+	2,  // 14: targets.GetPlaybackDataBySessionRequest.aircrafts:type_name -> targets.AircraftIdentity
+	7,  // 15: targets.AircraftServices.GetAircraft:input_type -> targets.GetAircraftRequest
+	4,  // 16: targets.AircraftServices.GetHistory:input_type -> targets.GetHistoryRequest
+	13, // 17: targets.AircraftServices.GetGlobalPlayback:input_type -> targets.GlobalPlaybackRequest
+	9,  // 18: targets.AircraftServices.UpdateIsPermanentAircrafts:input_type -> targets.UpdateIsPermanentAircraftsRequest
+	11, // 19: targets.AircraftServices.DeleteAircrafts:input_type -> targets.DeleteAircraftsRequest
+	17, // 20: targets.AircraftServices.GetAircraftsByTimeWindow:input_type -> targets.Session
+	19, // 21: targets.AircraftServices.GetPlaybackDataByTimeWindow:input_type -> targets.GetPlaybackDataByTimeWindowRequest
+	20, // 22: targets.AircraftServices.GetPlaybackDataBySession:input_type -> targets.GetPlaybackDataBySessionRequest
+	8,  // 23: targets.AircraftServices.GetAircraft:output_type -> targets.GetAircraftResponse
+	5,  // 24: targets.AircraftServices.GetHistory:output_type -> targets.GetHistoryResponse
+	16, // 25: targets.AircraftServices.GetGlobalPlayback:output_type -> targets.GlobalPlaybackResponse
+	10, // 26: targets.AircraftServices.UpdateIsPermanentAircrafts:output_type -> targets.UpdateIsPermanentAircraftsResponse
+	12, // 27: targets.AircraftServices.DeleteAircrafts:output_type -> targets.DeleteAircraftsResponse
+	18, // 28: targets.AircraftServices.GetAircraftsByTimeWindow:output_type -> targets.GetAircraftsByTimeWindowResponse
+	16, // 29: targets.AircraftServices.GetPlaybackDataByTimeWindow:output_type -> targets.GlobalPlaybackResponse
+	16, // 30: targets.AircraftServices.GetPlaybackDataBySession:output_type -> targets.GlobalPlaybackResponse
+	23, // [23:31] is the sub-list for method output_type
+	15, // [15:23] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_aircrafts_proto_init() }
