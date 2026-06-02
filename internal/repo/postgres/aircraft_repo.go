@@ -48,6 +48,181 @@ func latestAircraftByFlight(aircrafts []domain.Aircraft) []domain.Aircraft {
 	return latest
 }
 
+func bulkUpsertArchivedFlightSummary(ctx context.Context, tx *sql.Tx, aircrafts []domain.Aircraft) error {
+	if len(aircrafts) == 0 {
+		return nil
+	}
+
+	callsigns := make([]string, 0, len(aircrafts))
+	detectionTimes := make([]int64, 0, len(aircrafts))
+	categories := make([]int, 0, len(aircrafts))
+	classifications := make([]string, 0, len(aircrafts))
+	startTimes := make([]int64, 0, len(aircrafts))
+	endTimes := make([]int64, 0, len(aircrafts))
+
+	for _, ac := range aircrafts {
+		callsigns = append(callsigns, ac.Callsign)
+		detectionTimes = append(detectionTimes, ac.DetectionTime)
+		categories = append(categories, ac.Category)
+		classifications = append(classifications, ac.Classification)
+		startTimes = append(startTimes, ac.DetectionTime)
+		endTimes = append(endTimes, ac.LastTimestamp)
+	}
+
+	query := `
+		WITH input AS (
+			SELECT *
+			FROM unnest(
+				$1::text[],
+				$2::bigint[],
+				$3::int[],
+				$4::text[],
+				$5::bigint[],
+				$6::bigint[]
+			) AS t(callsign, detection_time, category, classification, start_time, end_time)
+		)
+		INSERT INTO archived_flight_summary (
+			callsign,
+			detection_time,
+			category,
+			classification,
+			start_time,
+			end_time
+		)
+		SELECT
+			callsign,
+			detection_time,
+			category,
+			classification,
+			start_time,
+			end_time
+		FROM input
+		ON CONFLICT (callsign, detection_time) DO UPDATE SET
+			end_time = GREATEST(archived_flight_summary.end_time, EXCLUDED.end_time),
+			category = EXCLUDED.category,
+			classification = EXCLUDED.classification
+	`
+
+	_, err := tx.ExecContext(
+		ctx,
+		query,
+		pq.Array(callsigns),
+		pq.Array(detectionTimes),
+		pq.Array(categories),
+		pq.Array(classifications),
+		pq.Array(startTimes),
+		pq.Array(endTimes),
+	)
+	if err != nil {
+		return fmt.Errorf("fail to bulk upsert archived flight summary: %w", err)
+	}
+	return nil
+}
+
+func bulkUpsertCurrentAircrafts(ctx context.Context, tx *sql.Tx, aircrafts []domain.Aircraft) error {
+	if len(aircrafts) == 0 {
+		return nil
+	}
+
+	callsigns := make([]string, 0, len(aircrafts))
+	detectionTimes := make([]int64, 0, len(aircrafts))
+	categories := make([]int, 0, len(aircrafts))
+	mode3As := make([]string, 0, len(aircrafts))
+	classifications := make([]string, 0, len(aircrafts))
+	lastLats := make([]float64, 0, len(aircrafts))
+	lastLngs := make([]float64, 0, len(aircrafts))
+	lastAlts := make([]float64, 0, len(aircrafts))
+	lastTimestamps := make([]int64, 0, len(aircrafts))
+
+	for _, ac := range aircrafts {
+		callsigns = append(callsigns, ac.Callsign)
+		detectionTimes = append(detectionTimes, ac.DetectionTime)
+		categories = append(categories, ac.Category)
+		mode3As = append(mode3As, ac.Mode3A)
+		classifications = append(classifications, ac.Classification)
+		lastLats = append(lastLats, ac.LastLat)
+		lastLngs = append(lastLngs, ac.LastLng)
+		lastAlts = append(lastAlts, ac.LastAlt)
+		lastTimestamps = append(lastTimestamps, ac.LastTimestamp)
+	}
+
+	query := `
+		WITH input AS (
+			SELECT *
+			FROM unnest(
+				$1::text[],
+				$2::bigint[],
+				$3::int[],
+				$4::text[],
+				$5::text[],
+				$6::double precision[],
+				$7::double precision[],
+				$8::double precision[],
+				$9::bigint[]
+			) AS t(
+				callsign,
+				detection_time,
+				category,
+				mode_3a,
+				classification,
+				last_lat,
+				last_lng,
+				last_alt,
+				last_timestamp
+			)
+		)
+		INSERT INTO aircraft (
+			callsign,
+			detection_time,
+			category,
+			mode_3a,
+			classification,
+			last_lat,
+			last_lng,
+			last_alt,
+			last_timestamp
+		)
+		SELECT
+			callsign,
+			detection_time,
+			category,
+			mode_3a,
+			classification,
+			last_lat,
+			last_lng,
+			last_alt,
+			last_timestamp
+		FROM input
+		ON CONFLICT (callsign, detection_time) DO UPDATE SET
+			category = EXCLUDED.category,
+			mode_3a = EXCLUDED.mode_3a,
+			classification = EXCLUDED.classification,
+			last_lat = EXCLUDED.last_lat,
+			last_lng = EXCLUDED.last_lng,
+			last_alt = EXCLUDED.last_alt,
+			last_timestamp = EXCLUDED.last_timestamp
+		WHERE aircraft.last_timestamp <= EXCLUDED.last_timestamp
+	`
+
+	_, err := tx.ExecContext(
+		ctx,
+		query,
+		pq.Array(callsigns),
+		pq.Array(detectionTimes),
+		pq.Array(categories),
+		pq.Array(mode3As),
+		pq.Array(classifications),
+		pq.Array(lastLats),
+		pq.Array(lastLngs),
+		pq.Array(lastAlts),
+		pq.Array(lastTimestamps),
+	)
+	if err != nil {
+		return fmt.Errorf("fail to bulk upsert current aircrafts: %w", err)
+	}
+	return nil
+}
+
 func (r *aircraftRepository) SaveAircraftColdData(ctx context.Context, aircrafts []domain.Aircraft) error {
 	if len(aircrafts) == 0 {
 		return nil
@@ -59,29 +234,8 @@ func (r *aircraftRepository) SaveAircraftColdData(ctx context.Context, aircrafts
 	}
 	defer tx.Rollback()
 
-	querySummary := `
-		INSERT INTO archived_flight_summary (callsign, detection_time, category, classification, start_time, end_time)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (callsign, detection_time) DO UPDATE SET
-			end_time = GREATEST(archived_flight_summary.end_time, EXCLUDED.end_time),
-			category = EXCLUDED.category,
-			classification = EXCLUDED.classification
-	`
-	stmtSummary, err := tx.PrepareContext(ctx, querySummary)
-	if err != nil {
-		return fmt.Errorf("fail to prepare context summary: %w", err)
-	}
-	defer stmtSummary.Close()
-
-	for _, ac := range latestAircraftByFlight(aircrafts) {
-		_, err := stmtSummary.ExecContext(ctx,
-			ac.Callsign, ac.DetectionTime, ac.Category, ac.Classification,
-			ac.DetectionTime, ac.LastTimestamp,
-		)
-		if err != nil {
-			return fmt.Errorf("fail to execute summary statement for %s: %w", ac.Callsign, err)
-		}
-
+	if err := bulkUpsertArchivedFlightSummary(ctx, tx, latestAircraftByFlight(aircrafts)); err != nil {
+		return err
 	}
 
 	copyStmt, err := tx.PrepareContext(ctx, pq.CopyIn(
@@ -164,35 +318,8 @@ func (r *aircraftRepository) SaveAircraftHotData(ctx context.Context, aircrafts 
 	}
 	defer tx.Rollback()
 
-	// Cập nhật bảng hot data aircraft
-	query1 := `
-		INSERT INTO aircraft (callsign, detection_time, category, mode_3a, classification, last_lat, last_lng, last_alt, last_timestamp)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		ON CONFLICT (callsign, detection_time) DO UPDATE SET
-			category = EXCLUDED.category,
-			mode_3a = EXCLUDED.mode_3a,
-			classification = EXCLUDED.classification,
-			last_lat = EXCLUDED.last_lat,
-			last_lng = EXCLUDED.last_lng,
-			last_alt = EXCLUDED.last_alt,
-			last_timestamp = EXCLUDED.last_timestamp
-		WHERE aircraft.last_timestamp <= EXCLUDED.last_timestamp
-	`
-	stmtCurrent, err := tx.PrepareContext(ctx, query1)
-	if err != nil {
-		return fmt.Errorf("fail to prepare context query1: %w", err)
-	}
-	defer stmtCurrent.Close()
-
-	for _, ac := range latestAircraftByFlight(aircrafts) {
-		_, err := stmtCurrent.ExecContext(ctx,
-			ac.Callsign, ac.DetectionTime, ac.Category, ac.Mode3A, ac.Classification,
-			ac.LastLat, ac.LastLng, ac.LastAlt, ac.LastTimestamp,
-		)
-		if err != nil {
-			return fmt.Errorf("fail to execute current statement for %s: %w", ac.Callsign, err)
-		}
-
+	if err := bulkUpsertCurrentAircrafts(ctx, tx, latestAircraftByFlight(aircrafts)); err != nil {
+		return err
 	}
 
 	copyStmt, err := tx.PrepareContext(ctx, pq.CopyIn(

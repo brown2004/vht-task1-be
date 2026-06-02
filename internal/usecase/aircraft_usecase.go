@@ -54,15 +54,15 @@ func NewAircraftUseCase(repo domain.AircraftRepository, publisher domain.NatsPub
 		repo:        repo,
 		publisher:   publisher,
 		dbChan:      make(chan domain.Aircraft, 200000),
-		hotBatches:  make(chan []domain.Aircraft, 256),
-		coldBatches: make(chan []domain.Aircraft, 1024),
+		hotBatches:  make(chan []domain.Aircraft, 1024),
+		coldBatches: make(chan []domain.Aircraft, 2048),
 		natsChan:    make(chan domain.Aircraft, 200000),
 		lastSeen:    make(map[aircraftKey]time.Time),
 	}
 
 	go aircraftUc.startBatchWorker()
-	aircraftUc.startHotDataWorkers(1)
-	aircraftUc.startColdDataWorkers(1)
+	aircraftUc.startHotDataWorkers(10)
+	aircraftUc.startColdDataWorkers(10)
 	go aircraftUc.sendFrameToNATS()
 	go aircraftUc.startTimeoutWorker()
 	go aircraftUc.startColdDataCleanupWorker()
@@ -313,6 +313,7 @@ func (u *aircraftUseCase) sendFrameToNATS() {
 	defer ticker.Stop()
 
 	const maxDrainPerFrame = 50000
+	const maxLiveAircraftsPerFrame = 5000
 
 	liveAircrafts := make(map[aircraftKey]domain.Aircraft)
 	liveLastSeen := make(map[aircraftKey]time.Time)
@@ -372,13 +373,10 @@ func (u *aircraftUseCase) sendFrameToNATS() {
 				continue
 			}
 
-			frameMsg := &pb.AircraftFrame{
-				FrameTimestamp: time.Now().UnixMilli(),
-				Data:           make([]*pb.AircraftUpdate, 0, len(liveAircrafts)),
-			}
-
+			frameTimestamp := time.Now().UnixMilli()
+			liveUpdates := make([]*pb.AircraftUpdate, 0, len(liveAircrafts))
 			for _, ac := range liveAircrafts {
-				frameMsg.Data = append(frameMsg.Data, &pb.AircraftUpdate{
+				liveUpdates = append(liveUpdates, &pb.AircraftUpdate{
 					Callsign:      ac.Callsign,
 					DetectionTime: ac.DetectionTime,
 					Category:      pb.Category(ac.Category),
@@ -395,14 +393,25 @@ func (u *aircraftUseCase) sendFrameToNATS() {
 				})
 			}
 
-			// Dong goi vao protobuf
-			data, err := proto.Marshal(frameMsg)
-			if err != nil {
-				log.Printf("[USECASE ERROR] marshal live frame failed aircrafts=%d err=%v", len(liveAircrafts), err)
-			} else {
-				err = u.publisher.PublishLiveFrame(data) // goi ham publish cua nats publisher
+			for start := 0; start < len(liveUpdates); start += maxLiveAircraftsPerFrame {
+				end := start + maxLiveAircraftsPerFrame
+				if end > len(liveUpdates) {
+					end = len(liveUpdates)
+				}
+
+				frameMsg := &pb.AircraftFrame{
+					FrameTimestamp: frameTimestamp,
+					Data:           liveUpdates[start:end],
+				}
+
+				data, err := proto.Marshal(frameMsg)
 				if err != nil {
-					log.Printf("[USECASE ERROR] publish live frame failed aircrafts=%d bytes=%d err=%v", len(liveAircrafts), len(data), err)
+					log.Printf("[USECASE ERROR] marshal live frame failed aircrafts=%d chunk=%d-%d err=%v", len(liveAircrafts), start, end, err)
+					continue
+				}
+
+				if err := u.publisher.PublishLiveFrame(data); err != nil {
+					log.Printf("[USECASE ERROR] publish live frame failed aircrafts=%d chunk=%d-%d bytes=%d err=%v", len(liveAircrafts), start, end, len(data), err)
 				}
 			}
 		default:

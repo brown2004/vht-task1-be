@@ -28,8 +28,8 @@ func main() {
 		log.Fatalf("Failed to open DB: %v", err)
 	}
 	defer db.Close()
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(5)
+	db.SetMaxOpenConns(24)
+	db.SetMaxIdleConns(12)
 	db.SetConnMaxLifetime(30 * time.Minute)
 
 	if err := db.Ping(); err != nil {
