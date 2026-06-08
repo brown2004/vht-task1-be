@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 5s # Chu kỳ lấy dữ liệu 5 giây (phù hợp với update 500ms của bạn)
+
+scrape_configs:
+  # 1. Lấy dữ liệu từ Golang Backend (Ta sẽ code để mở cổng 2112)
+  - job_name: 'golang-backend'
+    static_configs:
+      - targets: ['host.docker.internal:2112'] # Nếu BE không chạy trong docker thì dùng host.docker.internal
+
+  # 2. Lấy dữ liệu từ NATS
+  - job_name: 'nats'
+    static_configs:
+      - targets: ['nats-exporter:7777']
+
+  # 3. Lấy dữ liệu từ PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']

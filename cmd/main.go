@@ -81,6 +81,8 @@ func main() {
 		}
 	}()
 
+	go nats.StartMetricsServer()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 

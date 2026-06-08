@@ -3,13 +3,39 @@ package nats
 import (
 	"backend/domain"
 	"context"
+	"log"
+	"net/http"
 	"time"
 
 	pb "backend/proto/pb/aircraft"
 
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/protobuf/proto"
 )
+
+var (
+	messagesReceived = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "aircraft_messages_received_total",
+			Help: "Tổng số lượng message mục tiêu bay nhận được từ giả lập",
+		},
+	)
+	processingDuration = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "aircraft_message_processing_duration_seconds",
+			Help:    "Thời gian (giây) để xử lý và lưu 1 mục tiêu bay vào DB",
+			Buckets: []float64{0.001, 0.005, 0.01, 0.05, 0.1, 0.5}, // Tập trung đo dải ms
+		},
+	)
+)
+
+// Khởi tạo đăng ký metrics với Prometheus
+func init() {
+	prometheus.MustRegister(messagesReceived)
+	prometheus.MustRegister(processingDuration)
+}
 
 type natsHandler struct {
 	aircraftUsecase domain.AircraftUsecase
@@ -22,6 +48,10 @@ func NewNatsHandler(aircraftUsecase domain.AircraftUsecase) *natsHandler {
 }
 
 func (h *natsHandler) HandleAircraftMessage(msg *nats.Msg) {
+
+	startTime := time.Now() // Bắt đầu đếm thời gian
+
+	messagesReceived.Inc() // Tăng biến đếm tổng số message lên 1
 	var aircraftUpdate pb.AircraftUpdate
 
 	err := proto.Unmarshal(msg.Data, &aircraftUpdate)
@@ -48,6 +78,9 @@ func (h *natsHandler) HandleAircraftMessage(msg *nats.Msg) {
 	defer cancel()
 	h.aircraftUsecase.ProcessAircraftUpdate(ctx, aircraft)
 
+	duration := time.Since(startTime).Seconds()
+	processingDuration.Observe(duration)
+
 }
 
 type natsPublisher struct {
@@ -63,4 +96,12 @@ func NewNatsPublisher(nc *nats.Conn) *natsPublisher {
 func (p *natsPublisher) PublishLiveFrame(data []byte) error {
 
 	return p.nc.Publish("flight.live", data)
+}
+
+func StartMetricsServer() {
+	http.Handle("/metrics", promhttp.Handler())
+	log.Println("Prometheus Metrics Server chạy tại port :2112")
+	if err := http.ListenAndServe(":2112", nil); err != nil {
+		log.Fatalf("Lỗi chạy metrics server: %v", err)
+	}
 }
